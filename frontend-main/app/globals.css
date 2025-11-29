@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: #0e0f14;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+
+@theme {
+  /* Font sizes - using --font-size-* */
+  --font-size-xs: 0.7rem;
+  --font-size-sm: 0.8rem;
+  
+  /* Custom colors - using --color-* */
+  --color-green-background-transparent: rgba(0, 194, 120, 0.12);
+  --color-red-background-transparent: rgba(234, 56, 59, 0.12);
+  --color-base-background-l2: rgb(32, 33, 39);
+  --color-base-background-l3: rgb(32, 33, 39);
+  --color-green-primary-button-background: rgb(0, 194, 120);
+  
+  /* Border colors - using --color-* (they're all colors) */
+  --color-red-border: rgba(234, 56, 59, 0.5);
+  --color-green-border: rgba(0, 194, 120, 0.4);
+  --color-base-border-med: #cccccc;
+  --color-accent-blue: rgb(76, 148, 255);
+  --color-base-border-light: rgb(32, 33, 39);
+  --color-base-text-high-emphasis: rgb(244, 244, 246);
+  
+  /* Text colors - using --color-* */
+  --color-green-primary-button-text: rgb(20, 21, 27);
+}
+
+/* Custom utilities for gradients (if needed) */
+@utility bg-gradient-radial {
+  background-image: radial-gradient(var(--tw-gradient-stops));
+}
+
+@utility bg-gradient-conic {
+  background-image: conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops));
+}

@@ -1,0 +1,31 @@
+{
+  "name": "main-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "apexcharts": "^5.3.6",
+    "axios": "^1.13.1",
+    "lightweight-charts": "^4.1.6",
+    "next": "16.0.1",
+    "react": "19.2.0",
+    "react-apexcharts": "^1.8.0",
+    "react-dom": "19.2.0",
+    "react-icons": "^5.5.0",
+    "tailwindcss": "^4.1.16"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.16",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.1",
+    "typescript": "^5"
+  }
+}
