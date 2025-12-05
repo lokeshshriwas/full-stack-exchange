@@ -28,12 +28,12 @@ export function Depth({ market }: { market: string }) {
   };
 
   useEffect(() => {
-    getDepth(market).then((d) => {
-      setBids(d.bids.reverse());
-      setAsks(d.asks);
-    });
+    // getDepth(market).then((d) => {
+    //   setBids(d.bids.reverse());
+    //   setAsks(d.asks);
+    // });
 
-    getTrades(market).then((d) => setTrades(d));
+    // getTrades(market).then((d) => setTrades(d));
 
     getTicker(market).then((t) => setPrice(t.lastPrice));
 
@@ -101,7 +101,7 @@ export function Depth({ market }: { market: string }) {
           return updatedAsks;
         });
       },
-      `DEPTH-${market}`
+      `depth@${market}`
     );
 
     // Subscribe to the trade channel
@@ -129,7 +129,7 @@ export function Depth({ market }: { market: string }) {
           return updatedTrades;
         });
       },
-      `trade-${market}`
+      `trade@${market}`
     );
 
     // Accessing pre-subscribed price data from ticker channel
@@ -137,34 +137,34 @@ export function Depth({ market }: { market: string }) {
       "ticker",
       (data: Partial<Ticker>) =>
         setPrice((prevPrice) => data?.lastPrice ?? prevPrice ?? ""),
-      `ticker-${market}`
+      `ticker@${market}`
     );
 
     SignalingManager.getInstance().sendMessage({
       method: "SUBSCRIBE",
-      params: [`depth.200ms.${market}`],
+      params: [`depth@${market}`],
     });
     SignalingManager.getInstance().sendMessage({
       method: "SUBSCRIBE",
-      params: [`trade.${market}`],
+      params: [`trade@${market}`],
     });
 
     return () => {
       SignalingManager.getInstance().sendMessage({
         method: "UNSUBSCRIBE",
-        params: [`depth.200ms.${market}`],
+        params: [`depth@${market}`],
       });
       SignalingManager.getInstance().deRegisterCallback(
         "depth",
-        `DEPTH-${market}`
+        `depth@${market}`
       );
       SignalingManager.getInstance().sendMessage({
         method: "UNSUBSCRIBE",
-        params: [`trade.${market}`],
+        params: [`trade@${market}`],
       });
       SignalingManager.getInstance().deRegisterCallback(
         "trade",
-        `TRADE-${market}`
+        `trade@${market}`
       );
     };
   }, [market]);

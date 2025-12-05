@@ -25,12 +25,13 @@ export class Orderbook {
     lastTradeId: number;
     currentPrice: number;
 
-    constructor(baseAsset: string, bids: Order[], asks: Order[], lastTradeId: number, currentPrice: number) {
+    constructor(baseAsset: string, bids: Order[], asks: Order[], lastTradeId: number, currentPrice: number, quoteAsset?: string) {
         this.bids = bids;
         this.asks = asks;
         this.baseAsset = baseAsset;
+        this.quoteAsset = quoteAsset || BASE_CURRENCY;
         this.lastTradeId = lastTradeId || 0;
-        this.currentPrice = currentPrice ||0;
+        this.currentPrice = currentPrice || 0;
     }
 
     ticker() {
@@ -43,7 +44,8 @@ export class Orderbook {
             bids: this.bids,
             asks: this.asks,
             lastTradeId: this.lastTradeId,
-            currentPrice: this.currentPrice
+            currentPrice: this.currentPrice,
+            quoteAsset: this.quoteAsset
         }
     }
 
@@ -53,7 +55,7 @@ export class Orderbook {
         fills: Fill[]
     } {
         if (order.side === "buy") {
-            const {executedQty, fills} = this.matchBid(order); 
+            const { executedQty, fills } = this.matchBid(order);
             order.filled = executedQty;
             if (executedQty === order.quantity) {
                 return {
@@ -67,7 +69,7 @@ export class Orderbook {
                 fills
             }
         } else {
-            const {executedQty, fills} = this.matchAsk(order);
+            const { executedQty, fills } = this.matchAsk(order);
             order.filled = executedQty;
             if (executedQty === order.quantity) {
                 return {
@@ -83,7 +85,7 @@ export class Orderbook {
         }
     }
 
-    matchBid(order: Order): {fills: Fill[], executedQty: number} {
+    matchBid(order: Order): { fills: Fill[], executedQty: number } {
         const fills: Fill[] = [];
         let executedQty = 0;
 
@@ -113,10 +115,10 @@ export class Orderbook {
         };
     }
 
-    matchAsk(order: Order): {fills: Fill[], executedQty: number} {
+    matchAsk(order: Order): { fills: Fill[], executedQty: number } {
         const fills: Fill[] = [];
         let executedQty = 0;
-        
+
         for (let i = 0; i < this.bids.length; i++) {
             if (this.bids[i].price >= order.price && executedQty < order.quantity) {
                 const amountRemaining = Math.min(order.quantity - executedQty, this.bids[i].quantity);
@@ -148,8 +150,8 @@ export class Orderbook {
         const bids: [string, string][] = [];
         const asks: [string, string][] = [];
 
-        const bidsObj: {[key: string]: number} = {};
-        const asksObj: {[key: string]: number} = {};
+        const bidsObj: { [key: string]: number } = {};
+        const asksObj: { [key: string]: number } = {};
 
         for (let i = 0; i < this.bids.length; i++) {
             const order = this.bids[i];

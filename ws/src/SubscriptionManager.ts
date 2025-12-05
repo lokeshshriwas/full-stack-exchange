@@ -9,6 +9,8 @@ export class SubscriptionManager {
 
   private constructor() {
     this.redisClient = createClient();
+    this.redisClient.on("error", (err) => console.log("[WS] Redis Client Error", err));
+    this.redisClient.on("connect", () => console.log("[WS] Redis Client Connected"));
     this.redisClient.connect();
   }
 
@@ -20,6 +22,7 @@ export class SubscriptionManager {
   }
 
   public subscribe(userId: string, subscription: string) {
+    console.log(`[WS] User ${userId} subscribing to ${subscription}`);
     if (this.subscriptions.get(userId)?.includes(subscription)) {
       return;
     }
@@ -33,11 +36,13 @@ export class SubscriptionManager {
       (this.reverseSubscriptions.get(subscription) || []).concat(userId)
     );
     if (this.reverseSubscriptions.get(subscription)?.length === 1) {
+      console.log(`[WS] Subscribing to Redis channel: ${subscription}`);
       this.redisClient.subscribe(subscription, this.redisCallbackHandler);
     }
   }
 
   private redisCallbackHandler = (message: string, channel: string) => {
+    console.log(`[WS] Received message from Redis on channel: ${channel} and ${message}`);
     const parsedMessage = JSON.parse(message);
     this.reverseSubscriptions
       .get(channel)

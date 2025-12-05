@@ -16,7 +16,7 @@ export class RedisManager {
     }
 
     public static getInstance() {
-        if (!this.instance)  {
+        if (!this.instance) {
             this.instance = new RedisManager();
         }
         return this.instance;
@@ -28,8 +28,9 @@ export class RedisManager {
             this.client.subscribe(id, (message) => {
                 this.client.unsubscribe(id);
                 resolve(JSON.parse(message));
+            }).then(() => {
+                this.publisher.lPush("messages", JSON.stringify({ clientId: id, message }));
             });
-            this.publisher.lPush("messages", JSON.stringify({ clientId: id, message }));
         });
     }
 

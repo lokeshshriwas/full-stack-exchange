@@ -1,18 +1,24 @@
 import { Ticker } from "./types";
 
-export const BASE_URL = "wss://ws.backpack.exchange/";
+export const PROXY_URL = "wss://ws.backpack.exchange/";
+export const BASE_URL = "ws://localhost:3001";
 
 export class SignalingManager {
+  private proxyWs: WebSocket;
   private ws: WebSocket;
   private static instance: SignalingManager;
-  private bufferedMessages: any[] = [];
+  private proxyBufferedMessages: any[] = [];
+  private baseBufferedMessages: any[] = [];
   private callbacks: any = {};
   private id: number;
-  private initialized: boolean = false;
+  private initializedBase: boolean = false;
+  private initializedProxy: boolean = false;
 
   private constructor() {
+    this.proxyWs = new WebSocket(PROXY_URL);
     this.ws = new WebSocket(BASE_URL);
-    this.bufferedMessages = [];
+    this.proxyBufferedMessages = [];
+    this.baseBufferedMessages = [];
     this.id = 1;
     this.init();
   }
@@ -25,14 +31,15 @@ export class SignalingManager {
   }
 
   init() {
-    this.ws.onopen = () => {
-      this.initialized = true;
-      this.bufferedMessages.forEach((message) => {
-        this.ws.send(JSON.stringify(message));
+    this.proxyWs.onopen = () => {
+      this.initializedProxy = true;
+      this.proxyBufferedMessages.forEach((message) => {
+        this.proxyWs.send(JSON.stringify(message));
       });
-      this.bufferedMessages = [];
+      this.proxyBufferedMessages = [];
     };
-    this.ws.onmessage = (event) => {
+
+    this.proxyWs.onmessage = (event) => {
       const message = JSON.parse(event.data);
       const type = message.data.e;
       if (this.callbacks[type]) {
@@ -46,24 +53,7 @@ export class SignalingManager {
               quoteVolume: message.data.V,
               symbol: message.data.s,
             };
-
             callback(newTicker);
-          }
-          if (type === "depth") {
-            const updatedBids = message.data.b;
-            const updatedAsks = message.data.a;
-            callback({ bids: updatedBids, asks: updatedAsks });
-          }
-          if (type === "trade") {
-            const newTrade = {
-              price: message.data.p,
-              quantity: message.data.q,
-              id: message.data.t,
-              isBuyerMaker: message.data.m,
-              timestamp: Date.now(),
-              quoteQuantity: message.data.Q,
-            };
-            callback(newTrade);
           }
           if (type === "kline") {
             const newKline = {
@@ -82,6 +72,57 @@ export class SignalingManager {
         });
       }
     };
+
+    this.proxyWs.onerror = (error) => {
+      console.error("Proxy WebSocket error:", error);
+    };
+
+    this.proxyWs.onclose = () => {
+      console.log("Proxy WebSocket closed");
+      this.initializedProxy = false;
+    };
+
+    this.ws.onopen = () => {
+      this.initializedBase = true;
+      this.baseBufferedMessages.forEach((message) => {
+        this.ws.send(JSON.stringify(message));
+      });
+      this.baseBufferedMessages = [];
+    };
+
+    this.ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      const type = message.data.e;
+      if (this.callbacks[type]) {
+        this.callbacks[type].forEach(({ callback }: any) => {
+          if (type === "depth") {
+            const updatedBids = message.data.b;
+            const updatedAsks = message.data.a;
+            callback({ bids: updatedBids, asks: updatedAsks });
+          }
+          if (type === "trade") {
+            const newTrade = {
+              price: message.data.p,
+              quantity: message.data.q,
+              id: message.data.t,
+              isBuyerMaker: message.data.m,
+              timestamp: Date.now(),
+              quoteQuantity: message.data.Q,
+            };
+            callback(newTrade);
+          }
+        });
+      }
+    };
+
+    this.ws.onerror = (error) => {
+      console.error("Base WebSocket error:", error);
+    };
+
+    this.ws.onclose = () => {
+      console.log("Base WebSocket closed");
+      this.initializedBase = false;
+    };
   }
 
   sendMessage(message: any) {
@@ -89,17 +130,31 @@ export class SignalingManager {
       ...message,
       id: this.id++,
     };
-    if (!this.initialized) {
-      this.bufferedMessages.push(messageToSend);
-      return;
+
+    const isProxyMessage =
+      messageToSend.params &&
+      messageToSend.params[0] &&
+      (messageToSend.params[0].startsWith("ticker.") ||
+        messageToSend.params[0].startsWith("kline."));
+
+    if (isProxyMessage) {
+      if (!this.initializedProxy) {
+        this.proxyBufferedMessages.push(messageToSend);
+        return;
+      }
+      this.proxyWs.send(JSON.stringify(messageToSend));
+    } else {
+      if (!this.initializedBase) {
+        this.baseBufferedMessages.push(messageToSend);
+        return;
+      }
+      this.ws.send(JSON.stringify(messageToSend));
     }
-    this.ws.send(JSON.stringify(messageToSend));
   }
 
   async registerCallback(type: string, callback: any, id: string) {
     this.callbacks[type] = this.callbacks[type] || [];
     this.callbacks[type].push({ callback, id });
-    // "ticker" => callback
   }
 
   async deRegisterCallback(type: string, id: string) {
