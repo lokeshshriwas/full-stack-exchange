@@ -1,12 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  getDepth,
-  getKlines,
-  getTicker,
-  getTrades,
-} from "../../utils/httpClient";
+import { getTicker } from "../../utils/httpClient";
 import { BidTable } from "./BidTable";
 import { AskTable } from "./AskTable";
 import { SignalingManager } from "@/app/utils/SignalingManager";
@@ -28,13 +23,6 @@ export function Depth({ market }: { market: string }) {
   };
 
   useEffect(() => {
-    // getDepth(market).then((d) => {
-    //   setBids(d.bids.reverse());
-    //   setAsks(d.asks);
-    // });
-
-    // getTrades(market).then((d) => setTrades(d));
-
     getTicker(market).then((t) => setPrice(t.lastPrice));
 
     // Subscribe to the depth channel
@@ -42,60 +30,49 @@ export function Depth({ market }: { market: string }) {
       "depth",
       (data: any) => {
         setBids((originalBids = []) => {
-          // Step 1: Copy old bids to mutate safely
           let updatedBids = [...originalBids];
 
-          // Step 2: For each incoming bid [price, qty]
           for (const [price, qty] of data.bids) {
             const quantity = Number(qty);
             const existingIndex = updatedBids.findIndex((b) => b[0] === price);
 
             if (existingIndex !== -1) {
-              // Case 1: Price already exists → update or remove
               if (quantity === 0) {
-                updatedBids.splice(existingIndex, 1); // remove it
+                updatedBids.splice(existingIndex, 1);
               } else {
-                updatedBids[existingIndex][1] = qty; // update its quantity
+                updatedBids[existingIndex][1] = qty;
               }
             } else {
-              // Case 2: Price does NOT exist → add it (if qty > 0)
               if (quantity > 0) {
                 updatedBids.push([price, qty]);
               }
             }
           }
-
-          // Step 3 (optional): sort bids descending by price, if you want a proper order book
           updatedBids.sort((a, b) => Number(b[0]) - Number(a[0]));
 
           return updatedBids;
         });
 
         setAsks((originalAsks = []) => {
-          // Step 1: Copy old bids to mutate safely
           let updatedAsks = [...originalAsks];
 
-          // Step 2: For each incoming bid [price, qty]
           for (const [price, qty] of data.asks) {
             const quantity = Number(qty);
             const existingIndex = updatedAsks.findIndex((b) => b[0] === price);
 
             if (existingIndex !== -1) {
-              // Case 1: Price already exists → update or remove
               if (quantity === 0) {
-                updatedAsks.splice(existingIndex, 1); // remove it
+                updatedAsks.splice(existingIndex, 1);
               } else {
-                updatedAsks[existingIndex][1] = qty; // update its quantity
+                updatedAsks[existingIndex][1] = qty;
               }
             } else {
-              // Case 2: Price does NOT exist → add it (if qty > 0)
               if (quantity > 0) {
                 updatedAsks.push([price, qty]);
               }
             }
           }
 
-          // Step 3 (optional): sort bids asending by price, if you want a proper order book
           updatedAsks.sort((a, b) => Number(a[0]) - Number(b[0]));
 
           return updatedAsks;
@@ -109,21 +86,21 @@ export function Depth({ market }: { market: string }) {
       "trade",
       (data: any) => {
         setTrades((originalTrades = []) => {
-          // Step 1: Copy old trades to mutate safely
           let updatedTrades = [...originalTrades];
 
-          // Step 2: For each incoming trade
           const existingIndex = updatedTrades.findIndex(
             (t) => t.id === data.id
           );
 
           if (existingIndex !== -1) {
-            // Case 1: Trade already exists → update it
             updatedTrades[existingIndex] = data;
           } else {
-            // Case 2: Trade does NOT exist → add it and remove the last one
-            updatedTrades.pop();
-            updatedTrades = [data, ...updatedTrades];
+            if (updatedTrades.length >= 50) {
+              updatedTrades.pop();
+              updatedTrades = [data, ...updatedTrades];
+            } else {
+              updatedTrades = [data, ...updatedTrades];
+            }
           }
 
           return updatedTrades;

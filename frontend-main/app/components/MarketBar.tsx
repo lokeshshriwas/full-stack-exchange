@@ -5,45 +5,51 @@ import { getTicker } from "../utils/httpClient";
 import { SignalingManager } from "../utils/SignalingManager";
 import { trimString } from "../utils/helper";
 
-export const MarketBar = ({ market }: { market: string }) => {
-  const [ticker, setTicker] = useState<Ticker | null>(null);
+export const MarketBar = ({
+  market,
+  ticker,
+}: {
+  market: string;
+  ticker: Ticker | null;
+}) => {
+  // const [ticker, setTicker] = useState<Ticker | null>(null);
 
-  useEffect(() => {
-    getTicker(market).then(setTicker);
-    SignalingManager.getInstance().registerCallback(
-      "ticker",
-      (data: Partial<Ticker>) =>
-        setTicker((prevTicker) => ({
-          firstPrice: data?.firstPrice ?? prevTicker?.firstPrice ?? "",
-          high: data?.high ?? prevTicker?.high ?? "",
-          lastPrice: data?.lastPrice ?? prevTicker?.lastPrice ?? "",
-          low: data?.low ?? prevTicker?.low ?? "",
-          priceChange: data?.priceChange ?? prevTicker?.priceChange ?? "",
-          priceChangePercent:
-            data?.priceChangePercent ?? prevTicker?.priceChangePercent ?? "",
-          quoteVolume: data?.quoteVolume ?? prevTicker?.quoteVolume ?? "",
-          symbol: data?.symbol ?? prevTicker?.symbol ?? "",
-          trades: data?.trades ?? prevTicker?.trades ?? "",
-          volume: data?.volume ?? prevTicker?.volume ?? "",
-        })),
-      `ticker-${market}`
-    );
-    SignalingManager.getInstance().sendMessage({
-      method: "SUBSCRIBE",
-      params: [`ticker.${market}`],
-    });
+  // useEffect(() => {
+  //   getTicker(market).then(setTicker);
+  //   SignalingManager.getInstance().registerCallback(
+  //     "ticker",
+  //     (data: Partial<Ticker>) =>
+  //       setTicker((prevTicker) => ({
+  //         firstPrice: data?.firstPrice ?? prevTicker?.firstPrice ?? "",
+  //         high: data?.high ?? prevTicker?.high ?? "",
+  //         lastPrice: data?.lastPrice ?? prevTicker?.lastPrice ?? "",
+  //         low: data?.low ?? prevTicker?.low ?? "",
+  //         priceChange: data?.priceChange ?? prevTicker?.priceChange ?? "",
+  //         priceChangePercent:
+  //           data?.priceChangePercent ?? prevTicker?.priceChangePercent ?? "",
+  //         quoteVolume: data?.quoteVolume ?? prevTicker?.quoteVolume ?? "",
+  //         symbol: data?.symbol ?? prevTicker?.symbol ?? "",
+  //         trades: data?.trades ?? prevTicker?.trades ?? "",
+  //         volume: data?.volume ?? prevTicker?.volume ?? "",
+  //       })),
+  //     `ticker-${market}`
+  //   );
+  //   SignalingManager.getInstance().sendMessage({
+  //     method: "SUBSCRIBE",
+  //     params: [`ticker.${market}`],
+  //   });
 
-    return () => {
-      SignalingManager.getInstance().deRegisterCallback(
-        "ticker",
-        `ticker-${market}`
-      );
-      SignalingManager.getInstance().sendMessage({
-        method: "UNSUBSCRIBE",
-        params: [`ticker.${market}`],
-      });
-    };
-  }, [market]);
+  //   return () => {
+  //     SignalingManager.getInstance().deRegisterCallback(
+  //       "ticker",
+  //       `ticker-${market}`
+  //     );
+  //     SignalingManager.getInstance().sendMessage({
+  //       method: "UNSUBSCRIBE",
+  //       params: [`ticker.${market}`],
+  //     });
+  //   };
+  // }, [market]);
 
   return (
     <div>

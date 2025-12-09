@@ -7,6 +7,7 @@ import { depthRouter } from "./routes/depth";
 import { tradesRouter } from "./routes/trades";
 // import { tickersRouter } from "./routes/ticker";
 import { orderRouter } from "./routes/order";
+import cors from "cors";
 dotenv.config();
 
 // Replace this with the target server URL
@@ -14,7 +15,7 @@ const targetUrl = process.env.TARGET_URL;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+app.use(cors())
 // app.use("/api/v2/real-kline", klineRouter);
 app.use("/api/v2/depth", depthRouter);
 app.use("/api/v2/trades", tradesRouter);

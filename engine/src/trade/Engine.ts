@@ -263,6 +263,7 @@ export class Engine {
           p: fill.price,
           q: fill.qty.toString(),
           s: market,
+          o: fill.markerOrderId // orderId
         }
       });
     });

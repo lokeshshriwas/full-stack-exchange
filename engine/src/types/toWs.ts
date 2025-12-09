@@ -1,7 +1,7 @@
 //TODO: Can we share the types between the ws layer and the engine?
 
 export type TickerUpdateMessage = {
-    stream: string, 
+    stream: string,
     data: {
         c?: string,
         h?: string,
@@ -32,6 +32,7 @@ export type TradeAddedMessage = {
         p: string,
         q: string,
         s: string, // symbol
+        o: string
     }
 }
 

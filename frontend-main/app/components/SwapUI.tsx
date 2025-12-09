@@ -1,10 +1,25 @@
 "use client";
 import { useState } from "react";
+import { Ticker } from "../utils/types";
+import { makeOrder } from "../helper/fetch";
+import { trimString } from "../utils/helper";
 
-export function SwapUI({ market }: { market: string }) {
-  const [amount, setAmount] = useState("");
+export function SwapUI({
+  market,
+  ticker,
+}: {
+  market: string;
+  ticker: Ticker | null;
+}) {
+  const [amount, setAmount] = useState<string>(
+    ticker?.lastPrice?.toString() ?? "1"
+  );
+  const [qty, setQty] = useState<string>("1");
   const [activeTab, setActiveTab] = useState("buy");
-  const [type, setType] = useState("limit");
+  const [type, setType] = useState("market");
+
+  const numAmount = Number(amount);
+  const numQty = Number(qty);
 
   return (
     <div>
@@ -20,6 +35,7 @@ export function SwapUI({ market }: { market: string }) {
               <MarketButton type={type} setType={setType} />
             </div>
           </div>
+
           <div className="flex flex-col px-3">
             <div className="flex flex-col flex-1 gap-3 text-base-text-high-emphasis">
               <div className="flex flex-col gap-3">
@@ -32,90 +48,117 @@ export function SwapUI({ market }: { market: string }) {
                   </p>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
-                <p className="text-xs font-normal text-base-text-med-emphasis">
-                  Price
-                </p>
-                <div className="flex flex-col relative">
-                  <input
-                    onChange={() => {}}
-                    step="0.01"
-                    placeholder="0"
-                    className="h-12 rounded-lg border-2 border-solid border-base-border-light bg-[var(--background)] pr-12 text-right text-2xl leading-9 text-[$text] placeholder-base-text-med-emphasis ring-0 transition focus:border-accent-blue focus:ring-0"
-                    type="text"
-                    value="134.38"
-                  />
-                  <div className="flex flex-row absolute right-1 top-1 p-2">
-                    <div className="relative">
-                      <img src="/usdc.webp" className="w-6 h-6" />
+
+              {type === "limit" ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-normal text-base-text-med-emphasis">
+                    Price
+                  </p>
+                  <div className="flex flex-col relative">
+                    <input
+                      onChange={(e) => setAmount(e.target.value)}
+                      value={amount}
+                      step="0.01"
+                      type="number"
+                      placeholder=""
+                      className="h-12 rounded-lg border-2 border-solid border-base-border-light bg-[var(--background)] pr-12 text-right text-2xl leading-9 placeholder-base-text-med-emphasis ring-0 transition focus:border-accent-blue appearance-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <div className="flex flex-row absolute right-1 top-1 p-2">
+                      <div className="relative">
+                        <img src="/usdc.webp" className="w-6 h-6" />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="mt-3"></div>
+              )}
             </div>
+
             <div className="flex flex-col gap-2">
               <p className="text-xs font-normal text-base-text-med-emphasis">
                 Quantity
               </p>
               <div className="flex flex-col relative">
                 <input
-                  onChange={() => {}}
+                  onChange={(e) => setQty(e.target.value)}
+                  value={qty}
                   step="0.01"
-                  placeholder="0"
-                  className="h-12 rounded-lg border-2 border-solid border-base-border-light bg-[var(--background)] pr-12 text-right text-2xl leading-9 text-[$text] placeholder-base-text-med-emphasis ring-0 transition focus:border-accent-blue focus:ring-0"
-                  type="text"
-                  value="123"
+                  type="number"
+                  className="h-12 rounded-lg border-2 border-solid border-base-border-light bg-[var(--background)] pr-12 text-right text-2xl leading-9 placeholder-base-text-med-emphasis ring-0 transition focus:border-accent-blue appearance-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <div className="flex flex-row absolute right-1 top-1 p-2">
                   <div className="relative">
-                    <img src="/sol.webp" className="w-6 h-6" />
+                    <img
+                      src={`https://backpack.exchange/_next/image?url=%2Fcoins%2F${trimString(
+                        market
+                      )}.png&w=64&q=95`}
+                      className="w-6 h-6"
+                    />
                   </div>
                 </div>
               </div>
+
               <div className="flex justify-end flex-row">
                 <p className="font-medium pr-2 text-xs text-base-text-med-emphasis">
-                  ≈ 0.00 USDC
+                  {type === "limit"
+                    ? `${(numQty * numAmount).toFixed(2)}$`
+                    : `${(numQty * Number(ticker?.lastPrice)).toFixed(2)}$`}
                 </p>
               </div>
+
               <div className="flex justify-center flex-row mt-2 gap-3">
-                <div className="flex items-center justify-center flex-row rounded-full py-1.5 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3">
+                <div className="flex items-center justify-center flex-row rounded-full py-1.5 px-2 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3">
                   25%
                 </div>
-                <div className="flex items-center justify-center flex-row rounded-full py-1.5 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3">
+                <div className="flex items-center justify-center flex-row rounded-full py-1.5 px-2 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3">
                   50%
                 </div>
-                <div className="flex items-center justify-center flex-row rounded-full py-1.5 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3">
+                <div className="flex items-center justify-center flex-row rounded-full py-1.5 px-2 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3">
                   75%
                 </div>
-                <div className="flex items-center justify-center flex-row rounded-full py-1.5 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3">
+                <div className="flex items-center justify-center flex-row rounded-full py-1.5 px-2 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3">
                   Max
                 </div>
               </div>
             </div>
+
             <button
               type="button"
-              className="font-semibold  focus:ring-blue-200 focus:none focus:outline-none text-center h-12 rounded-xl text-base px-4 py-2 my-4 bg-green-primary-button-background text-green-primary-button-text active:scale-98"
-              data-rac=""
+              onClick={(e) => {
+                e.preventDefault();
+
+                const price =
+                  type === "limit" ? numAmount : Number(ticker?.lastPrice);
+
+                const action = activeTab === "buy" ? "buy" : "sell";
+
+                makeOrder(market, price, numQty, action, "5").then((res) =>
+                  console.log(res)
+                );
+              }}
+              className={`font-semibold focus:ring-blue-200 text-center h-12 rounded-xl text-base px-4 py-2 my-4 ${
+                activeTab === "buy" ? "bg-green-500" : "bg-red-500"
+              } text-white active:scale-98`}
             >
-              Buy
+              {activeTab === "buy" ? "Buy" : "Sell"}
             </button>
+
             <div className="flex justify-between flex-row mt-1">
               <div className="flex flex-row gap-2">
                 <div className="flex items-center">
                   <input
-                    className="form-checkbox rounded border border-solid border-base-border-med bg-base-950 font-light text-transparent shadow-none shadow-transparent outline-none ring-0 ring-transparent checked:border-base-border-med checked:bg-base-900 checked:hover:border-base-border-med focus:bg-base-900 focus:ring-0 focus:ring-offset-0 focus:checked:border-base-border-med cursor-pointer h-5 w-5"
+                    className="form-checkbox rounded border border-solid border-base-border-med bg-base-950 cursor-pointer h-5 w-5"
                     id="postOnly"
                     type="checkbox"
-                    data-rac=""
                   />
                   <label className="ml-2 text-xs">Post Only</label>
                 </div>
                 <div className="flex items-center">
                   <input
-                    className="form-checkbox rounded border border-solid border-base-border-med bg-base-950 font-light text-transparent shadow-none shadow-transparent outline-none ring-0 ring-transparent checked:border-base-border-med checked:bg-base-900 checked:hover:border-base-border-med focus:bg-base-900 focus:ring-0 focus:ring-offset-0 focus:checked:border-base-border-med cursor-pointer h-5 w-5"
+                    className="form-checkbox rounded border border-solid border-base-border-med bg-base-950 cursor-pointer h-5 w-5"
                     id="ioc"
                     type="checkbox"
-                    data-rac=""
                   />
                   <label className="ml-2 text-xs">IOC</label>
                 </div>

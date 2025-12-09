@@ -8,6 +8,7 @@ export type DbMessage = {
         quoteQuantity: string,
         timestamp: number,
         market: string
+        orderId: string
     }
 } | {
     type: "ORDER_UPDATE",

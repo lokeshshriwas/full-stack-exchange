@@ -17,21 +17,38 @@ async function main() {
   console.log("connected to redis");
 
   while (true) {
-    const response = await redisClient.rPop("db_processor" as string);
-    if (!response) {
-    } else {
-      const data: DbMessage = JSON.parse(response);
-      if (data.type === "TRADE_ADDED") {
-        console.log("adding data");
-        console.log(data);
-        const price = data.data.price;
-        const timestamp = new Date(data.data.timestamp);
-        const query =
-          "INSERT INTO BTC_USDC_price (time, price) VALUES ($1, $2)";
-        // TODO: How to add volume?
-        const values = [timestamp, price];
-        await pgClient.query(query, values);
-      }
+    const response = await redisClient.rPop("db_processor");
+    if (!response) continue;
+
+    const data: DbMessage = JSON.parse(response);
+
+    if (data.type === "TRADE_ADDED") {
+      const symbol = data.data.market;
+      const price = data.data.price;
+      const qty = data.data.quantity;
+      const isBuyerMaker = data.data.isBuyerMaker;
+      const tradeId = data.data.id || null;
+      const timestamp = new Date(data.data.timestamp);
+      const orderId = data.data.orderId;
+
+      const query = `
+        INSERT INTO trades (symbol, price, qty, isBuyerMaker, trade_id, ts, order_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT DO NOTHING
+      `;
+
+      const values = [
+        symbol,
+        price,
+        qty,
+        isBuyerMaker,
+        tradeId,
+        timestamp,
+        orderId
+      ];
+
+      await pgClient.query(query, values);
+      console.log(`✔ Inserted trade for ${symbol}`);
     }
   }
 }
