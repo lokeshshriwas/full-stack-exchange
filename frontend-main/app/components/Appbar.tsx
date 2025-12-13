@@ -106,7 +106,7 @@ export const Appbar = () => {
             </a>
             <a
               className="text-black my-auto mr-6 rounded-lg bg-white px-2 py-1.5 text-xs font-semibold text-nowrap hover:opacity-90 sm:px-3 sm:text-sm"
-              href="/signup"
+              href="/register"
             >
               Sign up
             </a>

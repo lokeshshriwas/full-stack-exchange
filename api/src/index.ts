@@ -8,6 +8,7 @@ import { tradesRouter } from "./routes/trades";
 // import { tickersRouter } from "./routes/ticker";
 import { orderRouter } from "./routes/order";
 import cors from "cors";
+import { userRouter } from "./routes/user";
 dotenv.config();
 
 // Replace this with the target server URL
@@ -20,6 +21,7 @@ app.use(cors())
 app.use("/api/v2/depth", depthRouter);
 app.use("/api/v2/trades", tradesRouter);
 app.use("/api/v2/order", orderRouter);
+app.use("/api/v2/auth", userRouter);
 // app.use('/api/v2/tickers', tickersRouter)
 
 // Handle CORS

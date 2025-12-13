@@ -12,6 +12,16 @@ async function initializeDB() {
   await client.connect();
 
   await client.query(`
+        DROP TABLE IF EXISTS "users";
+        CREATE TABLE "users" (
+          id SERIAL PRIMARY KEY,
+          full_name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          password VARCHAR(255) NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW()
+        );
+    `);
+  await client.query(`
         DROP TABLE IF EXISTS "BTC_USDC_price";
         CREATE TABLE "BTC_USDC_price"(
             time            TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -19,8 +29,6 @@ async function initializeDB() {
             volume      DOUBLE PRECISION,
             currency_code   VARCHAR (10)
         );
-        
-        SELECT create_hypertable('BTC_USDC_price', 'time', 'price', 2);
     `);
 
   await client.query(`
