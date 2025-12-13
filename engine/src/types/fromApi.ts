@@ -28,7 +28,8 @@ export type MessageFromApi = {
     data: {
         amount: string,
         userId: string,
-        txnId: string
+        txnId: string,
+        asset: string
     }
 } | {
     type: typeof GET_DEPTH,

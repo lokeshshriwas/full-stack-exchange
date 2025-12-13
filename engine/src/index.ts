@@ -3,7 +3,8 @@ import { Engine } from "./trade/Engine";
 
 
 async function main() {
-    const engine = new Engine(); 
+    const engine = new Engine();
+    await engine.init();
     const redisClient = createClient();
     await redisClient.connect();
     console.log("connected to redis");
@@ -12,9 +13,9 @@ async function main() {
         const response = await redisClient.rPop("messages" as string)
         if (!response) {
 
-        }  else {
+        } else {
             engine.process(JSON.parse(response));
-        }        
+        }
     }
 
 }

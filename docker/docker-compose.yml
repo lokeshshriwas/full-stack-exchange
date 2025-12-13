@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   timescaledb:
@@ -7,9 +7,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: my_database
-      POSTGRES_USER: your_user
-      POSTGRES_PASSWORD: your_password
+      POSTGRES_DB: exchange-platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 020802
     volumes:
       - timescale-data:/var/lib/postgresql/data
 
