@@ -7,7 +7,7 @@ import axios from "axios";
 import { Ticker } from "../types/toApi";
 
 //TODO: Avoid floats everywhere, use a decimal similar to the PayTM project for every currency
-export const BASE_CURRENCY = "INR";
+export const BASE_CURRENCY = "USDC";
 
 interface UserBalance {
   [key: string]: {

@@ -1,13 +1,7 @@
 import { Router } from "express";
-import { Client } from "pg"
-const pgClient = new Client({
-    user: "postgres",
-    host: "localhost",
-    database: "exchange-platform",
-    password: "020802",
-    port: 5432,
-});
-pgClient.connect();
+import pool from "../db"
+
+pool.connect();
 
 export const tradesRouter = Router();
 
@@ -28,7 +22,7 @@ tradesRouter.get("/recent", async (req, res) => {
     LIMIT 50
     `;
     const values = [market];
-    const result = await pgClient.query(query, values);
+    const result = await pool.query(query, values);
     res.json(result.rows);
 })
 

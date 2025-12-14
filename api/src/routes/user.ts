@@ -1,18 +1,11 @@
 import { Router, Request, Response } from "express";
-import { Client } from "pg";
+import pool from "../db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 dotenv.config();
 
-const pgClient = new Client({
-    user: "postgres",
-    host: "localhost",
-    database: "exchange-platform",
-    password: "020802",
-    port: 5432,
-});
-pgClient.connect();
+pool.connect();
 
 export const userRouter = Router();
 
@@ -40,7 +33,7 @@ userRouter.post("/register", async (req: Request, res: Response) => {
         }
 
         // Check if user already exists
-        const existingUser = await pgClient.query(
+        const existingUser = await pool.query(
             "SELECT id FROM users WHERE email = $1",
             [email.toLowerCase()]
         );
@@ -56,7 +49,7 @@ userRouter.post("/register", async (req: Request, res: Response) => {
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
         // Insert new user
-        const result = await pgClient.query(
+        const result = await pool.query(
             `INSERT INTO users (full_name, email, password, created_at) 
              VALUES ($1, $2, $3, NOW()) 
              RETURNING id, full_name, email, created_at`,
@@ -112,7 +105,7 @@ userRouter.post("/login", async (req: Request, res: Response) => {
         }
 
         // Find user by email
-        const result = await pgClient.query(
+        const result = await pool.query(
             "SELECT id, full_name, email, password, created_at FROM users WHERE email = $1",
             [email.toLowerCase()]
         );
@@ -185,7 +178,7 @@ userRouter.get("/me", async (req: Request, res: Response) => {
 
         const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; email: string };
 
-        const result = await pgClient.query(
+        const result = await pool.query(
             "SELECT id, full_name, email, created_at FROM users WHERE id = $1",
             [decoded.userId]
         );

@@ -1,15 +1,7 @@
-import { Client } from 'pg';
 import { Router } from "express";
-import { RedisManager } from "../RedisManager";
+import pool from '../db';
 
-const pgClient = new Client({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'exchange-platform',
-    password: '020802',
-    port: 5432,
-});
-pgClient.connect();
+pool.connect();
 
 export const klineRouter = Router();
 
@@ -33,7 +25,7 @@ klineRouter.get("/", async (req, res) => {
 
     try {
         //@ts-ignore
-        const result = await pgClient.query(query, [new Date(startTime * 1000 as string), new Date(endTime * 1000 as string)]);
+        const result = await pool.query(query, [new Date(startTime * 1000 as string), new Date(endTime * 1000 as string)]);
         res.json(result.rows.map(x => ({
             close: x.close,
             end: x.bucket,
