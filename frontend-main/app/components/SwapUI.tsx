@@ -133,9 +133,7 @@ export function SwapUI({
 
                 const action = activeTab === "buy" ? "buy" : "sell";
 
-                makeOrder(market, price, numQty, action, "5").then((res) =>
-                  console.log(res)
-                );
+                makeOrder(market, price, numQty, action, "5");
               }}
               className={`font-semibold focus:ring-blue-200 text-center h-12 rounded-xl text-base px-4 py-2 my-4 ${
                 activeTab === "buy" ? "bg-green-500" : "bg-red-500"

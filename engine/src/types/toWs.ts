@@ -17,8 +17,8 @@ export type TickerUpdateMessage = {
 export type DepthUpdateMessage = {
     stream: string,
     data: {
-        b?: [string, string][],
-        a?: [string, string][],
+        bids: [string, string][],  // Changed from 'b' to 'bids'
+        asks: [string, string][],  // Changed from 'a' to 'asks'
         e: "depth"
     }
 }

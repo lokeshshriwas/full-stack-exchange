@@ -96,8 +96,9 @@ export class SignalingManager {
       if (this.callbacks[type]) {
         this.callbacks[type].forEach(({ callback }: any) => {
           if (type === "depth") {
-            const updatedBids = message.data.b;
-            const updatedAsks = message.data.a;
+            // Backend now sends 'bids' and 'asks' directly
+            const updatedBids = message.data.bids || [];
+            const updatedAsks = message.data.asks || [];
             callback({ bids: updatedBids, asks: updatedAsks });
           }
           if (type === "trade") {
