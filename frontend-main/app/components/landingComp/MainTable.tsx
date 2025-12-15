@@ -7,6 +7,22 @@ import Table from "./Table";
 import { getTickers, marketDataKlines } from "@/app/utils/httpClient";
 import TopGainerSection from "./TopGainerSection";
 
+// Consistent price-based sorting function
+const sortByPrice = (tickers: any[]) => {
+  return [...tickers].sort((a: any, b: any) => {
+    const priceA = parseFloat(a.lastPrice) || 0;
+    const priceB = parseFloat(b.lastPrice) || 0;
+
+    // Primary sort: by price (descending - highest first)
+    if (priceB !== priceA) {
+      return priceB - priceA;
+    }
+
+    // Secondary sort: by symbol (alphabetically) for consistency when prices are equal
+    return a.symbol.localeCompare(b.symbol);
+  });
+};
+
 // Fetcher function - combines both API calls
 const fetchTableData = async () => {
   const [tickers, klines] = await Promise.all([
@@ -14,9 +30,8 @@ const fetchTableData = async () => {
     marketDataKlines(),
   ]);
 
-  const sortedTickers = tickers.sort(
-    (a: any, b: any) => b.lastPrice - a.lastPrice
-  );
+  // Sort by price (highest to lowest)
+  const sortedTickers = sortByPrice(tickers);
 
   return sortedTickers.map((ticker: any) => ({
     ...ticker,
@@ -30,15 +45,17 @@ const MainTable = () => {
     isLoading,
     isValidating,
   } = useSWR("table-data", fetchTableData, {
-    revalidateOnFocus: true, // Refresh when window regains focus
-    revalidateOnReconnect: true, // Refresh when network reconnects
-    refreshInterval: 30000, // Background refresh every 30s
-    dedupingInterval: 5000, // Dedupe requests within 5s
-    keepPreviousData: true, // Keep showing old data while fetching
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+    refreshInterval: 30000,
+    dedupingInterval: 5000,
+    keepPreviousData: true,
   });
 
-  // Memoize processed data
-  const memoizedTableData = useMemo(() => tableData, [tableData]);
+  // Memoize and ensure consistent sorting
+  const memoizedTableData = useMemo(() => {
+    return sortByPrice(tableData);
+  }, [tableData]);
 
   if (isLoading && memoizedTableData.length === 0) {
     return <LoadingSkeleton />;
@@ -59,7 +76,7 @@ const MainTable = () => {
 
 const LoadingSkeleton = () => (
   <div className="flex flex-col gap-4 mt-4 animate-pulse">
-    <div className="flex flex justify-between gap-4">
+    <div className="flex justify-between gap-4">
       <div className="h-60 bg-gray-200 w-1/3 rounded-xl" />
       <div className="h-60 bg-gray-200 w-1/3 rounded-xl" />
       <div className="h-60 bg-gray-200 w-1/3 rounded-xl" />

@@ -1,5 +1,7 @@
+// app/register/page.tsx
 "use client";
-import React, { useState } from "react";
+
+import React, { useState, Suspense } from "react";
 import { FiMail, FiLock, FiUser } from "react-icons/fi";
 import Header from "../components/maincomps/Header";
 import Input from "../components/maincomps/Input";
@@ -7,7 +9,10 @@ import Checkbox from "../components/maincomps/Checkbox";
 import Button from "../components/maincomps/Button";
 import PasswordStrength from "../components/maincomps/PasswordStrength";
 import toast, { Toaster } from "react-hot-toast";
-import axios from "axios";
+import { useAuth } from "../context/AuthContext";
+import { useRouter, useSearchParams } from "next/navigation";
+import { AxiosError } from "axios";
+import Link from "next/link";
 
 interface FormData {
   fullName: string;
@@ -24,7 +29,7 @@ interface FormErrors {
   terms?: string;
 }
 
-export default function App() {
+function RegisterForm() {
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
     email: "",
@@ -34,6 +39,12 @@ export default function App() {
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [subscribeNewsletter, setSubscribeNewsletter] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { register } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/balance";
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -81,25 +92,142 @@ export default function App() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (validateForm()) {
-      try {
-        const response = await axios.post(
-          "http://localhost:8080/api/v2/auth/register",
-          formData
-        );
-        if (response.status === 201) {
-          toast.success("Registration successful");
-        } else if (response.status === 409) {
-          toast.error("Email already exists");
-        } else {
-          toast.error("Something went wrong");
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+
+    try {
+      await register(formData.fullName, formData.email, formData.password);
+      toast.success("Registration successful!");
+      router.push(redirectTo);
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        const message = error.response?.data?.message || "Registration failed";
+        toast.error(message);
+
+        // Handle specific error cases
+        if (error.response?.status === 409) {
+          setErrors((prev) => ({
+            ...prev,
+            email: "Email already exists",
+          }));
         }
-      } catch (error) {
+      } else {
         toast.error("Something went wrong");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <Input
+        label="Full Name"
+        type="text"
+        name="fullName"
+        placeholder="Enter your full name"
+        value={formData.fullName}
+        onChange={handleChange}
+        error={errors.fullName}
+        icon={<FiUser />}
+        disabled={isSubmitting}
+      />
+
+      <Input
+        label="Email"
+        type="email"
+        name="email"
+        placeholder="Enter your email"
+        value={formData.email}
+        onChange={handleChange}
+        error={errors.email}
+        icon={<FiMail />}
+        disabled={isSubmitting}
+      />
+
+      <div>
+        <Input
+          label="Password"
+          type="password"
+          name="password"
+          placeholder="Create a password"
+          value={formData.password}
+          onChange={handleChange}
+          error={errors.password}
+          icon={<FiLock />}
+          disabled={isSubmitting}
+        />
+        <PasswordStrength password={formData.password} />
+      </div>
+
+      <Input
+        label="Confirm Password"
+        type="password"
+        name="confirmPassword"
+        placeholder="Confirm your password"
+        value={formData.confirmPassword}
+        onChange={handleChange}
+        error={errors.confirmPassword}
+        icon={<FiLock />}
+        disabled={isSubmitting}
+      />
+
+      <div className="space-y-3 pt-2 mt-4">
+        <Checkbox
+          label={
+            <span>
+              I agree to the{" "}
+              <Link href="/terms" className="text-white hover:underline">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" className="text-white hover:underline">
+                Privacy Policy
+              </Link>
+            </span>
+          }
+          checked={agreeToTerms}
+          onChange={setAgreeToTerms}
+          error={errors.terms}
+        />
+
+        <Checkbox
+          label="Send me product updates and newsletters"
+          checked={subscribeNewsletter}
+          onChange={setSubscribeNewsletter}
+        />
+      </div>
+
+      <div className="pt-2 mt-4">
+        <Button
+          type="submit"
+          variant="primary"
+          fullWidth
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Creating account..." : "Create account"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function RegisterFormSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-12 bg-neutral-800 rounded-lg" />
+      <div className="h-12 bg-neutral-800 rounded-lg" />
+      <div className="h-12 bg-neutral-800 rounded-lg" />
+      <div className="h-12 bg-neutral-800 rounded-lg" />
+      <div className="h-6 bg-neutral-800 rounded w-3/4 mt-4" />
+      <div className="h-6 bg-neutral-800 rounded w-2/3" />
+      <div className="h-12 bg-neutral-800 rounded-lg mt-4" />
+    </div>
+  );
+}
+
+export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -109,96 +237,21 @@ export default function App() {
             subtitle="Start your journey with us today"
           />
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              label="Full Name"
-              type="text"
-              name="fullName"
-              placeholder="Enter your full name"
-              value={formData.fullName}
-              onChange={handleChange}
-              error={errors.fullName}
-              icon={<FiUser />}
-            />
-
-            <Input
-              label="Email"
-              type="email"
-              name="email"
-              placeholder="Enter your email"
-              value={formData.email}
-              onChange={handleChange}
-              error={errors.email}
-              icon={<FiMail />}
-            />
-
-            <div>
-              <Input
-                label="Password"
-                type="password"
-                name="password"
-                placeholder="Create a password"
-                value={formData.password}
-                onChange={handleChange}
-                error={errors.password}
-                icon={<FiLock />}
-              />
-              <PasswordStrength password={formData.password} />
-            </div>
-
-            <Input
-              label="Confirm Password"
-              type="password"
-              name="confirmPassword"
-              placeholder="Confirm your password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              error={errors.confirmPassword}
-              icon={<FiLock />}
-            />
-
-            <div className="space-y-3 pt-2 mt-4">
-              <Checkbox
-                label={
-                  <span>
-                    I agree to the{" "}
-                    <a href="#" className="text-white hover:underline">
-                      Terms of Service
-                    </a>{" "}
-                    and{" "}
-                    <a href="#" className="text-white hover:underline">
-                      Privacy Policy
-                    </a>
-                  </span>
-                }
-                checked={agreeToTerms}
-                onChange={setAgreeToTerms}
-                error={errors.terms}
-              />
-
-              <Checkbox
-                label="Send me product updates and newsletters"
-                checked={subscribeNewsletter}
-                onChange={setSubscribeNewsletter}
-              />
-            </div>
-
-            <div className="pt-2 mt-4">
-              <Button type="submit" variant="primary" fullWidth>
-                Create account
-              </Button>
-            </div>
-          </form>
+          <Suspense fallback={<RegisterFormSkeleton />}>
+            <RegisterForm />
+          </Suspense>
 
           <p className="mt-8 text-center text-sm text-neutral-500">
             Already have an account?{" "}
-            <a href="/login" className="text-white hover:underline font-medium">
+            <Link
+              href="/login"
+              className="text-white hover:underline font-medium"
+            >
               Login
-            </a>
+            </Link>
           </p>
         </div>
       </div>
-      <Toaster position="bottom-center" />
     </div>
   );
 }

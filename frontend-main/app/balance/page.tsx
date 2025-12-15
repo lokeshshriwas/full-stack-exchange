@@ -25,7 +25,7 @@ import { IoClose } from 'react-icons/io5';
 import { BiDollarCircle } from 'react-icons/bi';
 import { HiMiniArrowsRightLeft } from 'react-icons/hi2';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:8080/api/v2';
 
 // Types
 interface Balance {

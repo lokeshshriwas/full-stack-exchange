@@ -9,7 +9,7 @@ const BASE_URL = "http://localhost:8080/api/v2";
 // Fixed: Returns Ticker[] (array), not Ticker (single object)
 export async function getTickers(): Promise<Ticker[]> {
   const response = await axios.get(`${PROXY_BASE_URL}/tickers`);
-  return response.data;
+  return response.data.filter((t: Ticker) => !t.symbol.endsWith("PERP"));
 }
 
 export async function getTicker(market: string): Promise<Ticker> {

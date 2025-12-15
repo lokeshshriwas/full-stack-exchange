@@ -10,6 +10,7 @@ interface InputProps {
   error?: string;
   icon?: React.ReactNode;
   name?: string;
+  disabled?: boolean; 
 }
 
 const Input: React.FC<InputProps> = ({
@@ -21,6 +22,7 @@ const Input: React.FC<InputProps> = ({
   error,
   icon,
   name,
+  disabled
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password";
@@ -44,6 +46,7 @@ const Input: React.FC<InputProps> = ({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
+          disabled={disabled}
           className={`w-full bg-neutral-900 border ${
             error ? "border-red-500" : "border-neutral-800"
           } 

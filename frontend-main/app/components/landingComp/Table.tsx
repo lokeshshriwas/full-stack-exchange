@@ -3,6 +3,7 @@ import React from "react";
 import LineChart from "./LineChart";
 
 const Table = ({ tableData }: { tableData: any }) => {
+  const sortedTableData = tableData.sort((a: any, b: any) => b.lastPrice - a.lastPrice);
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full">
@@ -23,11 +24,6 @@ const Table = ({ tableData }: { tableData: any }) => {
                 24h Volume
               </div>
             </th>
-            {/* <th className="border-b border-base-border-light w-[17%] px-1 py-3 text-xs font-normal text-med-emphasis first:pl-2 last:pr-6">
-              <div className="flex flex-row items-center px-1 first:pl-0 cursor-pointer select-none justify-end text-right">
-                Market Cap
-              </div>
-            </th> */}
             <th className="border-b border-base-border-light w-[17%] px-1 py-3 text-xs font-normal text-med-emphasis first:pl-2 last:pr-6">
               <div className="flex flex-row items-center px-1 first:pl-0 cursor-pointer select-none justify-end text-right">
                 24h Change
@@ -42,7 +38,7 @@ const Table = ({ tableData }: { tableData: any }) => {
         </thead>
 
         <tbody className="divide-y divide-base-border-light">
-          {tableData
+          {sortedTableData
             ?.filter((item: any) => !item.symbol.endsWith("PERP"))
             .map((item: any) => (
               <tr className="group hover:bg-base-background-l2 cursor-pointer"  key={item?.symbol}>
@@ -87,9 +83,6 @@ const Table = ({ tableData }: { tableData: any }) => {
                     {formatNumber(item?.volume)}
                   </p>
                 </td>
-                {/* <td className="text-sm tabular-nums px-2 py-3 last:pr-7 text-right">
-                  <p className="text-sm font-medium tabular-nums">$2T</p>
-                </td> */}
                 <td className="text-sm tabular-nums px-2 py-3 last:pr-7 text-right">
                   <p className={`text-sm font-medium tabular-nums text-red-text ${(item?.priceChangePercent * 100) < 0 ? "text-red-500" : "text-green-500"}`}>
                     {(item?.priceChangePercent * 100).toFixed(2)}%

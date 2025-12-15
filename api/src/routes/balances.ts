@@ -1,12 +1,12 @@
 import { Router, Request, Response } from "express";
 import pool from "../db";
 
-const router = Router();
+export const balanceRouter = Router();
 
 /**
  * GET user balances (all holdings)
  */
-router.get("/:userId", async (req: Request, res: Response) => {
+balanceRouter.get("/:userId", async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -37,7 +37,7 @@ router.get("/:userId", async (req: Request, res: Response) => {
 /**
  * GET user USDC balance only
  */
-router.get("/:userId/usdc", async (req: Request, res: Response) => {
+balanceRouter.get("/:userId/usdc", async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -75,7 +75,7 @@ router.get("/:userId/usdc", async (req: Request, res: Response) => {
 /**
  * POST add USDC balance only
  */
-router.post("/add-usdc", async (req: Request, res: Response) => {
+balanceRouter.post("/add-usdc", async (req: Request, res: Response) => {
   try {
     const { userId, amount }: { userId: number; amount: string } = req.body;
 
@@ -138,4 +138,4 @@ router.post("/add-usdc", async (req: Request, res: Response) => {
   }
 });
 
-export default router;
+

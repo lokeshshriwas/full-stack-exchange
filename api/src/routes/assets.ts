@@ -1,10 +1,10 @@
 import { Router, Request, Response } from "express";
 import pool from "../db";
 
-const router = Router();
+export const assetsRouter = Router();
 
 // GET all assets
-router.get("/", async (_req: Request, res: Response) => {
+assetsRouter.get("/", async (_req: Request, res: Response) => {
   try {
     const result = await pool.query(
       "SELECT * FROM assets ORDER BY symbol"
@@ -17,7 +17,7 @@ router.get("/", async (_req: Request, res: Response) => {
 });
 
 // POST seed assets (run once)
-router.post("/seed", async (_req: Request, res: Response) => {
+assetsRouter.post("/seed", async (_req: Request, res: Response) => {
   try {
     await pool.query(`
       INSERT INTO assets (symbol, decimals) VALUES
@@ -41,4 +41,3 @@ router.post("/seed", async (_req: Request, res: Response) => {
   }
 });
 
-export default router;
