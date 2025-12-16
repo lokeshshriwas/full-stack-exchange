@@ -1,5 +1,7 @@
 import { Router, Request, Response } from "express";
 import pool from "../db";
+import { RedisManager } from "../RedisManager";
+import { ON_RAMP } from "../types";
 
 export const balanceRouter = Router();
 
@@ -127,6 +129,16 @@ balanceRouter.post("/add-usdc", async (req: Request, res: Response) => {
       WHERE b.user_id = $1 AND a.symbol = 'USDC'`,
       [userId]
     );
+
+    RedisManager.getInstance().pushMessage({
+      type: ON_RAMP,
+      data: {
+        amount,
+        userId: userId.toString(),
+        txnId: (Math.random() * 1000000).toString(),
+        asset: "USDC"
+      }
+    });
 
     res.json({
       message: "USDC added successfully",

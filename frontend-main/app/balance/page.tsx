@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   FaWallet,
   FaPlus,
@@ -11,7 +11,7 @@ import {
   FaSpinner,
   FaBitcoin,
   FaEthereum,
-} from 'react-icons/fa';
+} from "react-icons/fa";
 import {
   SiSolana,
   SiBinance,
@@ -19,13 +19,14 @@ import {
   SiCardano,
   SiDogecoin,
   SiPolygon,
-} from 'react-icons/si';
-import { RiCoinLine } from 'react-icons/ri';
-import { IoClose } from 'react-icons/io5';
-import { BiDollarCircle } from 'react-icons/bi';
-import { HiMiniArrowsRightLeft } from 'react-icons/hi2';
+} from "react-icons/si";
+import { RiCoinLine } from "react-icons/ri";
+import { IoClose } from "react-icons/io5";
+import { BiDollarCircle } from "react-icons/bi";
+import { HiMiniArrowsRightLeft } from "react-icons/hi2";
+import { useAuth } from "../context/AuthContext";
 
-const API_BASE_URL = 'http://localhost:8080/api/v2';
+const API_BASE_URL = "http://localhost:8080/api/v2";
 
 // Types
 interface Balance {
@@ -60,7 +61,7 @@ const Toast = ({
   onClose,
 }: {
   message: string;
-  type: 'success' | 'error';
+  type: "success" | "error";
   onClose: () => void;
 }) => {
   useEffect(() => {
@@ -71,13 +72,13 @@ const Toast = ({
   return (
     <div
       className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-lg border ${
-        type === 'success'
-          ? 'bg-black border-white/20 text-white'
-          : 'bg-black border-red-500/50 text-red-400'
+        type === "success"
+          ? "bg-black border-white/20 text-white"
+          : "bg-black border-red-500/50 text-red-400"
       }`}
-      style={{ animation: 'slideIn 0.3s ease-out' }}
+      style={{ animation: "slideIn 0.3s ease-out" }}
     >
-      {type === 'success' ? (
+      {type === "success" ? (
         <FaCheckCircle className="text-lg text-white" />
       ) : (
         <FaTimesCircle className="text-lg" />
@@ -129,7 +130,8 @@ const USDCBalanceCard = ({
             <FaCoins className="text-white/30" /> Available
           </p>
           <p className="text-white font-mono font-bold text-2xl">
-            ${available.toLocaleString(undefined, {
+            $
+            {available.toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
@@ -141,7 +143,8 @@ const USDCBalanceCard = ({
             <FaLock className="text-white/30" /> In Orders
           </p>
           <p className="text-white/60 font-mono font-bold text-2xl">
-            ${locked.toLocaleString(undefined, {
+            $
+            {locked.toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
@@ -151,7 +154,8 @@ const USDCBalanceCard = ({
         <div className="bg-white/5 rounded-xl p-5 border border-white/10">
           <p className="text-white/40 text-sm mb-2">Total Balance</p>
           <p className="text-white font-mono font-bold text-2xl">
-            ${total.toLocaleString(undefined, {
+            $
+            {total.toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
@@ -232,17 +236,17 @@ const AddUSDCModal = ({
   isLoading: boolean;
   currentBalance: number;
 }) => {
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (amount && parseFloat(amount) > 0) {
       onAddBalance(amount);
-      setAmount('');
+      setAmount("");
     }
   };
 
-  const quickAmounts = ['100', '500', '1000', '5000', '10000', '50000'];
+  const quickAmounts = ["100", "500", "1000", "5000", "10000", "50000"];
 
   if (!isOpen) return null;
 
@@ -254,7 +258,7 @@ const AddUSDCModal = ({
       {/* Modal */}
       <div
         className="relative bg-black border border-white/20 rounded-2xl p-8 w-full max-w-lg"
-        style={{ animation: 'scaleIn 0.2s ease-out' }}
+        style={{ animation: "scaleIn 0.2s ease-out" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -279,7 +283,8 @@ const AddUSDCModal = ({
         <div className="bg-white/5 border border-white/10 rounded-xl p-5 mb-6">
           <p className="text-white/40 text-sm mb-1">Current USDC Balance</p>
           <p className="text-white font-mono font-bold text-2xl">
-            ${currentBalance.toLocaleString(undefined, {
+            $
+            {currentBalance.toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
@@ -325,8 +330,8 @@ const AddUSDCModal = ({
                   onClick={() => setAmount(quickAmount)}
                   className={`px-4 py-3 rounded-lg font-medium transition-all border ${
                     amount === quickAmount
-                      ? 'bg-white text-black border-white'
-                      : 'bg-black text-white/70 border-white/20 hover:border-white/40 hover:text-white'
+                      ? "bg-white text-black border-white"
+                      : "bg-black text-white/70 border-white/20 hover:border-white/40 hover:text-white"
                   }`}
                 >
                   ${parseInt(quickAmount).toLocaleString()}
@@ -341,10 +346,14 @@ const AddUSDCModal = ({
               <div className="flex justify-between items-center">
                 <span className="text-white/40 text-sm">New Balance</span>
                 <span className="text-white font-mono font-bold text-lg">
-                  ${(currentBalance + parseFloat(amount)).toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  $
+                  {(currentBalance + parseFloat(amount)).toLocaleString(
+                    undefined,
+                    {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }
+                  )}
                 </span>
               </div>
             </div>
@@ -364,7 +373,7 @@ const AddUSDCModal = ({
             ) : (
               <>
                 <FaPlus />
-                Add ${amount ? parseFloat(amount).toLocaleString() : '0'} USDC
+                Add ${amount ? parseFloat(amount).toLocaleString() : "0"} USDC
               </>
             )}
           </button>
@@ -387,21 +396,23 @@ export default function BalancePage() {
   const [isAddingBalance, setIsAddingBalance] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
-    type: 'success' | 'error';
+    type: "success" | "error";
   } | null>(null);
+  const { user, isLoading: authLoading } = useAuth();
 
   // Demo user ID - Replace with actual auth
-  const userId = 1;
+  const userId = user?.id;
 
   // Get USDC balance
-  const usdcBalance = balances.find((b) => b.symbol === 'USDC') || null;
+  const usdcBalance = balances.find((b) => b.symbol === "USDC") || null;
   const usdcAvailable = usdcBalance ? parseFloat(usdcBalance.available) : 0;
 
   // Get other balances (non-USDC)
-  const otherBalances = balances.filter((b) => b.symbol !== 'USDC');
+  const otherBalances = balances.filter((b) => b.symbol !== "USDC");
 
   // Fetch all balances
   const fetchBalances = async () => {
+    if (!userId) return;
     try {
       const response = await fetch(`${API_BASE_URL}/balances/${userId}`);
       const data = await response.json();
@@ -409,28 +420,30 @@ export default function BalancePage() {
         setBalances(data.balances);
       }
     } catch (error) {
-      console.error('Error fetching balances:', error);
+      console.error("Error fetching balances:", error);
     }
   };
 
   // Initial load
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      await fetchBalances();
-      setIsLoading(false);
-    };
-    loadData();
-  }, []);
+    if (userId) {
+      const loadData = async () => {
+        setIsLoading(true);
+        await fetchBalances();
+        setIsLoading(false);
+      };
+      loadData();
+    }
+  }, [userId]);
 
   // Add USDC handler
   const handleAddUSDC = async (amount: string) => {
     setIsAddingBalance(true);
     try {
       const response = await fetch(`${API_BASE_URL}/balances/add-usdc`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId,
@@ -442,28 +455,30 @@ export default function BalancePage() {
 
       if (response.ok) {
         setToast({
-          message: `Successfully added $${parseFloat(amount).toLocaleString()} USDC`,
-          type: 'success',
+          message: `Successfully added $${parseFloat(
+            amount
+          ).toLocaleString()} USDC`,
+          type: "success",
         });
         setIsModalOpen(false);
         await fetchBalances();
       } else {
         setToast({
-          message: data.error || 'Failed to add USDC',
-          type: 'error',
+          message: data.error || "Failed to add USDC",
+          type: "error",
         });
       }
     } catch (error) {
       setToast({
-        message: 'Connection error. Please try again.',
-        type: 'error',
+        message: "Connection error. Please try again.",
+        type: "error",
       });
     } finally {
       setIsAddingBalance(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoading || (authLoading && !user)) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -551,7 +566,9 @@ export default function BalancePage() {
             <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center mx-auto mb-4">
               <HiMiniArrowsRightLeft className="text-2xl text-white/20" />
             </div>
-            <h3 className="text-white font-bold text-lg mb-2">No Holdings Yet</h3>
+            <h3 className="text-white font-bold text-lg mb-2">
+              No Holdings Yet
+            </h3>
             <p className="text-white/40 text-sm mb-6">
               Start trading to acquire other cryptocurrencies
             </p>
@@ -649,13 +666,13 @@ export default function BalancePage() {
           background: #555;
         }
 
-        input[type='number']::-webkit-outer-spin-button,
-        input[type='number']::-webkit-inner-spin-button {
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
           -webkit-appearance: none;
           margin: 0;
         }
 
-        input[type='number'] {
+        input[type="number"] {
           -moz-appearance: textfield;
         }
       `}</style>

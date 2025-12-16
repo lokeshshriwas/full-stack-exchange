@@ -61,6 +61,8 @@ const MainTable = () => {
     return <LoadingSkeleton />;
   }
 
+  const sortedTableSymbols = tableData.map((ticker: any) => ticker.symbol);
+  console.log(sortedTableSymbols);
   return (
     <div className="flex flex-col gap-4 mt-4">
       <div>

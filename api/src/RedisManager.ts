@@ -22,6 +22,10 @@ export class RedisManager {
         return this.instance;
     }
 
+    public getRandomClientId() {
+        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    }
+
     public sendAndAwait(message: MessageToEngine) {
         return new Promise<MessageFromOrderbook>((resolve) => {
             const id = this.getRandomClientId();
@@ -34,8 +38,9 @@ export class RedisManager {
         });
     }
 
-    public getRandomClientId() {
-        return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    public pushMessage(message: MessageToEngine) {
+        const id = this.getRandomClientId();
+        this.publisher.lPush("messages", JSON.stringify({ clientId: id, message }));
     }
 
 }

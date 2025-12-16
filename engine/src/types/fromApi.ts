@@ -5,6 +5,7 @@ export const ON_RAMP = "ON_RAMP";
 
 export const GET_DEPTH = "GET_DEPTH";
 export const GET_OPEN_ORDERS = "GET_OPEN_ORDERS";
+export const ENSURE_USER = "ENSURE_USER";
 
 
 //TODO: Can we share the types between the api and the engine?
@@ -41,5 +42,16 @@ export type MessageFromApi = {
     data: {
         userId: string,
         market: string,
+    }
+} | {
+    type: typeof ENSURE_USER,
+    data: {
+        userId: string,
+        balances: {
+            [asset: string]: {
+                available: number,
+                locked: number
+            }
+        }
     }
 }

@@ -108,6 +108,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // --- 2. Initialize Interceptors once ---
   useEffect(() => {
     attachAuthInterceptor();
+
+    // Check localStorage for persisted user
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Failed to parse stored user", e);
+        localStorage.removeItem("user");
+      }
+    }
   }, []);
 
   const fetchUser = useCallback(async () => {
@@ -116,10 +127,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const response = await axios.get("/api/v2/auth/me");
 
       if (response.data.success) {
-        setUser(response.data.data.user || response.data.data);
+        const userData = response.data.data.user || response.data.data;
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
       }
     } catch (error) {
       setUser(null);
+      localStorage.removeItem("user");
       // Don't redirect here, just stop loading.
       // Redirects should happen on Protected Routes, not inside Context.
     } finally {
@@ -141,7 +155,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       if (response.data.success) {
-        setUser(response.data.data.user);
+        const userData = response.data.data.user;
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
         // Cookies are set automatically by the browser due to defaults.withCredentials
       }
     } catch (error) {
@@ -166,7 +182,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       if (response.data.success) {
-        setUser(response.data.data.user);
+        const userData = response.data.data.user;
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
       }
     } catch (error) {
       console.error("Register failed", error);
@@ -183,6 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("Logout failed", error);
     } finally {
       setUser(null);
+      localStorage.removeItem("user");
       router.push("/login");
     }
   };
@@ -205,6 +224,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
+  console.log("AuthContext", context);
   if (!context) {
     throw new Error("useAuth must be used within AuthProvider");
   }

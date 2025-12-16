@@ -1,4 +1,4 @@
-import { CANCEL_ORDER, CREATE_ORDER, GET_DEPTH, GET_OPEN_ORDERS, ON_RAMP } from "."
+import { CANCEL_ORDER, CREATE_ORDER, GET_DEPTH, GET_OPEN_ORDERS, ON_RAMP, ENSURE_USER } from "."
 
 export type MessageToEngine = {
     type: typeof CREATE_ORDER,
@@ -20,7 +20,8 @@ export type MessageToEngine = {
     data: {
         amount: string,
         userId: string,
-        txnId: string
+        txnId: string,
+        asset: string
     }
 } | {
     type: typeof GET_DEPTH,
@@ -32,5 +33,16 @@ export type MessageToEngine = {
     data: {
         userId: string,
         market: string,
+    }
+} | {
+    type: typeof ENSURE_USER,
+    data: {
+        userId: string,
+        balances: {
+            [asset: string]: {
+                available: number,
+                locked: number
+            }
+        }
     }
 }

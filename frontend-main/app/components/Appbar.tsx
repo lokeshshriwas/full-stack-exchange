@@ -117,9 +117,12 @@ export const Appbar = () => {
               </div>
             ) : (
               <div className="flex flex-row gap-4">
-                <div className="my-auto mr-6 rounded-lg bg-base-background-l2 px-2 py-1.5 text-xs font-semibold text-nowrap text-white hover:opacity-90 sm:px-3 sm:text-sm cursor-pointer">
+                <a
+                  className="my-auto mr-6 rounded-lg bg-base-background-l2 px-2 py-1.5 text-xs font-semibold text-nowrap text-white hover:opacity-90 sm:px-3 sm:text-sm cursor-pointer"
+                  href="/balance"
+                >
                   Profile
-                </div>
+                </a>
               </div>
             )}
           </div>
