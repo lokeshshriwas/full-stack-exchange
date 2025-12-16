@@ -64,7 +64,8 @@ function attachAuthInterceptor() {
         // ONLY redirect if we are NOT already on the login page
         if (
           typeof window !== "undefined" &&
-          window.location.pathname !== "/login"
+          window.location.pathname !== "/login" &&
+          window.location.pathname !== "/register"
         ) {
           window.location.href = "/login";
         }
@@ -83,7 +84,8 @@ function attachAuthInterceptor() {
           // ONLY redirect if we are NOT already on the login page
           if (
             typeof window !== "undefined" &&
-            window.location.pathname !== "/login"
+            window.location.pathname !== "/login" &&
+            window.location.pathname !== "/register"
           ) {
             window.location.href = "/login";
           }
