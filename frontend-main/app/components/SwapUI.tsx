@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Ticker } from "../utils/types";
 import { makeOrder } from "../helper/fetch";
 import { trimString } from "../utils/helper";
+import { useUser } from "../hooks/useUser";
+import { useRouter } from "next/navigation";
 
 export function SwapUI({
   market,
@@ -17,6 +19,8 @@ export function SwapUI({
   const [qty, setQty] = useState<string>("1");
   const [activeTab, setActiveTab] = useState("buy");
   const [type, setType] = useState("market");
+  const router = useRouter();
+  const { user, loading } = useUser();
 
   const numAmount = Number(amount);
   const numQty = Number(qty);
@@ -123,24 +127,46 @@ export function SwapUI({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
+            <div className="flex flex-col gap-4">
+              {loading ? (
+                <div className="font-semibold text-center h-12 rounded-xl text-base px-4 py-2 my-4 bg-slate-800 text-slate-400 cursor-wait">
+                  Loading...
+                </div>
+              ) : user ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
 
-                const price =
-                  type === "limit" ? numAmount : Number(ticker?.lastPrice);
+                    const price =
+                      type === "limit" ? numAmount : Number(ticker?.lastPrice);
 
-                const action = activeTab === "buy" ? "buy" : "sell";
+                    const action = activeTab === "buy" ? "buy" : "sell";
 
-                makeOrder(market, price, numQty, action, "5");
-              }}
-              className={`font-semibold focus:ring-blue-200 text-center h-12 rounded-xl text-base px-4 py-2 my-4 ${
-                activeTab === "buy" ? "bg-green-500" : "bg-red-500"
-              } text-white active:scale-98`}
-            >
-              {activeTab === "buy" ? "Buy" : "Sell"}
-            </button>
+                    makeOrder(
+                      market,
+                      price.toString(),
+                      numQty.toString(),
+                      action,
+                      user.id
+                    );
+                  }}
+                  className={`font-semibold focus:ring-blue-200 text-center h-12 rounded-xl text-base px-4 py-2 my-4 ${
+                    activeTab === "buy" ? "bg-green-500" : "bg-red-500"
+                  } text-white active:scale-98`}
+                >
+                  {activeTab === "buy" ? "Buy" : "Sell"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => router.push("/register")}
+                  className="font-semibold focus:ring-blue-200 text-center h-12 rounded-xl text-base px-4 py-2 my-4 bg-white text-black hover:opacity-90 active:scale-98"
+                >
+                  Sign up to trade
+                </button>
+              )}
+            </div>
 
             <div className="flex justify-between flex-row mt-1">
               <div className="flex flex-row gap-2">

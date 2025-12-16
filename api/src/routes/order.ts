@@ -1,12 +1,15 @@
 import { Router } from "express";
 import { RedisManager } from "../RedisManager";
 import { CREATE_ORDER, CANCEL_ORDER, ON_RAMP, GET_OPEN_ORDERS } from "../types";
+import { authMiddleware, AuthRequest } from "../middleware";
+
 
 export const orderRouter = Router();
 
-orderRouter.post("/", async (req, res) => {
+orderRouter.post("/", authMiddleware, async (req: AuthRequest, res) => {
   if (req.body) {
-    const { market, price, quantity, side, userId } = req.body;
+    const { market, price, quantity, side } = req.body;
+    const userId = req.userId;
     console.log({ market, price, quantity, side, userId });
     //TODO: can u make the type of the response object right? Right now it is a union.
     const response = await RedisManager.getInstance().sendAndAwait({
@@ -16,7 +19,7 @@ orderRouter.post("/", async (req, res) => {
         price,
         quantity,
         side,
-        userId,
+        userId: userId!,
       },
     });
     res.json(response.payload);

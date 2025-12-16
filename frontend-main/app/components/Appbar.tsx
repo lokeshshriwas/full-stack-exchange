@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { CiSearch } from "react-icons/ci";
 import { useEffect, useState } from "react";
 import { getTickers } from "../utils/httpClient";
+import { useUser } from "../hooks/useUser";
 
 export const Appbar = () => {
   const router = useRouter();
@@ -11,6 +12,7 @@ export const Appbar = () => {
   const [markets, setMarkets] = useState<any[]>([]);
   const [marketToShow, setMarketToShow] = useState<any[]>([]);
   const [openModal, setOpenModal] = useState(false);
+  const { user, loading } = useUser();
 
   // Load tickers correctly
   useEffect(() => {
@@ -98,18 +100,28 @@ export const Appbar = () => {
 
           {/* Right Auth Buttons */}
           <div className="animate-in fade-in col-span-2 flex flex-row justify-self-end xl:col-span-1">
-            <a
-              className="bg-base-background-l2 my-auto mr-4 rounded-lg px-2 py-1.5 text-xs font-semibold text-nowrap text-white hover:opacity-90 sm:ml-4 sm:px-3 sm:text-sm"
-              href="/login"
-            >
-              Log in
-            </a>
-            <a
-              className="text-black my-auto mr-6 rounded-lg bg-white px-2 py-1.5 text-xs font-semibold text-nowrap hover:opacity-90 sm:px-3 sm:text-sm"
-              href="/register"
-            >
-              Sign up
-            </a>
+            {loading ? null : !user ? (
+              <div className="flex flex-row">
+                <a
+                  className="bg-base-background-l2 my-auto mr-4 rounded-lg px-2 py-1.5 text-xs font-semibold text-nowrap text-white hover:opacity-90 sm:ml-4 sm:px-3 sm:text-sm"
+                  href="/login"
+                >
+                  Log in
+                </a>
+                <a
+                  className="text-black my-auto mr-6 rounded-lg bg-white px-2 py-1.5 text-xs font-semibold text-nowrap hover:opacity-90 sm:px-3 sm:text-sm"
+                  href="/register"
+                >
+                  Sign up
+                </a>
+              </div>
+            ) : (
+              <div className="flex flex-row gap-4">
+                <div className="my-auto mr-6 rounded-lg bg-base-background-l2 px-2 py-1.5 text-xs font-semibold text-nowrap text-white hover:opacity-90 sm:px-3 sm:text-sm cursor-pointer">
+                  Profile
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
