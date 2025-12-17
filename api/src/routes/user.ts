@@ -4,6 +4,8 @@ import pool from "../db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { RedisManager } from "../RedisManager";
+import { ENSURE_USER, ON_RAMP } from "../types";
 dotenv.config();
 
 pool.connect();
@@ -257,7 +259,6 @@ userRouter.post("/refresh", async (req: Request, res: Response) => {
 userRouter.get("/me", async (req: Request, res: Response) => {
   try {
     const accessToken = req.cookies.accessToken;
-
     if (!accessToken) {
       return res.status(401).json({
         success: false,
@@ -265,25 +266,54 @@ userRouter.get("/me", async (req: Request, res: Response) => {
       });
     }
 
+    // 1. Decode once (cheap, sync)
     const decoded = jwt.verify(accessToken, JWT_SECRET) as {
       userId: number;
       email: string;
     };
 
-    const result = await pool.query(
-      "SELECT id, full_name, email, created_at FROM users WHERE id = $1",
-      [decoded.userId]
-    );
+    // 2. Run DB queries in parallel
+    const [userResult, assetsResult] = await Promise.all([
+      pool.query(
+        "SELECT id, full_name, email, created_at FROM users WHERE id = $1",
+        [decoded.userId]
+      ),
+      pool.query(
+        `SELECT 
+          b.user_id,
+          b.asset_id,
+          b.available,
+          b.locked,
+          a.symbol,
+          a.decimals
+        FROM balances b
+        JOIN assets a ON b.asset_id = a.id
+        WHERE b.user_id = $1
+        ORDER BY 
+          CASE WHEN a.symbol = 'USDC' THEN 0 ELSE 1 END,
+          a.symbol`,
+        [decoded.userId]
+      ),
+    ]);
 
-    if (result.rows.length === 0) {
+    if (userResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: "User not found",
       });
     }
 
-    const user = result.rows[0];
+    if (assetsResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Assets not found",
+      });
+    }
 
+    const user = userResult.rows[0];
+    const assets = assetsResult.rows;
+
+    // 3. Send response FIRST (critical for latency)
     res.status(200).json({
       success: true,
       data: {
@@ -291,8 +321,32 @@ userRouter.get("/me", async (req: Request, res: Response) => {
         fullName: user.full_name,
         email: user.email,
         createdAt: user.created_at,
+        balance: assets,
       },
     });
+
+    // 4. Fire-and-forget: SYNC user balances to engine (NOT add!)
+    // Build the balances object in the format the engine expects
+    const balancesForEngine: { [key: string]: { available: number; locked: number } } = {};
+
+    for (const asset of assets) {
+      balancesForEngine[asset.symbol] = {
+        available: parseFloat(asset.available) || 0,
+        locked: parseFloat(asset.locked) || 0,
+      };
+    }
+
+    // Use ENSURE_USER instead of ON_RAMP
+    // ENSURE_USER only sets balance if user doesn't exist in engine
+    const redis = RedisManager.getInstance();
+    redis.pushMessage({
+      type: ENSURE_USER,
+      data: {
+        userId: decoded.userId.toString(),
+        balances: balancesForEngine,
+      },
+    });
+
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
       return res.status(401).json({
@@ -309,6 +363,7 @@ userRouter.get("/me", async (req: Request, res: Response) => {
       });
     }
 
+    console.error(error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
