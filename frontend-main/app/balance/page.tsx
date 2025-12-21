@@ -104,20 +104,24 @@ const USDCBalanceCard = ({
   const total = available + locked;
 
   return (
-    <div className="bg-black border border-white/20 rounded-2xl p-8">
+    <div className="bg-base-background border border-base-border-light rounded-2xl p-8">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center text-3xl">
+          <div className="w-14 h-14 rounded-full bg-base-text-high-emphasis dark:text-black text-white flex items-center justify-center text-3xl">
             <BiDollarCircle />
           </div>
           <div>
-            <h3 className="text-white font-bold text-2xl">USDC</h3>
-            <p className="text-white/40 text-sm">Trading Currency</p>
+            <h3 className="text-base-text-high-emphasis font-bold text-2xl">
+              USDC
+            </h3>
+            <p className="text-base-text-med-emphasis text-sm">
+              Trading Currency
+            </p>
           </div>
         </div>
         <button
           onClick={onAddClick}
-          className="flex items-center gap-2 bg-white text-black font-bold px-6 py-3 rounded-lg hover:bg-white/90 transition-all"
+          className="flex items-center gap-2 bg-base-text-high-emphasis dark:text-black text-white font-bold px-6 py-3 rounded-lg hover:opacity-90 transition-all"
         >
           <FaPlus />
           Add Funds
@@ -125,11 +129,11 @@ const USDCBalanceCard = ({
       </div>
 
       <div className="grid grid-cols-3 gap-6">
-        <div className="bg-white/5 rounded-xl p-5 border border-white/10">
-          <p className="text-white/40 text-sm mb-2 flex items-center gap-2">
-            <FaCoins className="text-white/30" /> Available
+        <div className="bg-base-background-l2 rounded-xl p-5 border border-base-border-light">
+          <p className="text-base-text-med-emphasis text-sm mb-2 flex items-center gap-2">
+            <FaCoins className="text-base-text-med-emphasis" /> Available
           </p>
-          <p className="text-white font-mono font-bold text-2xl">
+          <p className="text-base-text-high-emphasis font-mono font-bold text-2xl">
             $
             {available.toLocaleString(undefined, {
               minimumFractionDigits: 2,
@@ -138,11 +142,11 @@ const USDCBalanceCard = ({
           </p>
         </div>
 
-        <div className="bg-white/5 rounded-xl p-5 border border-white/10">
-          <p className="text-white/40 text-sm mb-2 flex items-center gap-2">
-            <FaLock className="text-white/30" /> In Orders
+        <div className="bg-base-background-l2 rounded-xl p-5 border border-base-border-light">
+          <p className="text-base-text-med-emphasis text-sm mb-2 flex items-center gap-2">
+            <FaLock className="text-base-text-med-emphasis" /> In Orders
           </p>
-          <p className="text-white/60 font-mono font-bold text-2xl">
+          <p className="text-base-text-med-emphasis font-mono font-bold text-2xl">
             $
             {locked.toLocaleString(undefined, {
               minimumFractionDigits: 2,
@@ -151,9 +155,11 @@ const USDCBalanceCard = ({
           </p>
         </div>
 
-        <div className="bg-white/5 rounded-xl p-5 border border-white/10">
-          <p className="text-white/40 text-sm mb-2">Total Balance</p>
-          <p className="text-white font-mono font-bold text-2xl">
+        <div className="bg-base-background-l2 rounded-xl p-5 border border-base-border-light">
+          <p className="text-base-text-med-emphasis text-sm mb-2">
+            Total Balance
+          </p>
+          <p className="text-base-text-high-emphasis font-mono font-bold text-2xl">
             $
             {total.toLocaleString(undefined, {
               minimumFractionDigits: 2,
@@ -173,24 +179,26 @@ const AssetBalanceCard = ({ balance }: { balance: Balance }) => {
   const total = available + locked;
 
   return (
-    <div className="bg-black border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all">
+    <div className="bg-base-background border border-base-border-light rounded-xl p-5 hover:border-base-border-med transition-all">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xl text-white">
+          <div className="w-10 h-10 rounded-full bg-base-background-l2 border border-base-border-light flex items-center justify-center text-xl text-base-text-high-emphasis">
             {getAssetIcon(balance.symbol)}
           </div>
           <div>
-            <h3 className="text-white font-bold">{balance.symbol}</h3>
-            <p className="text-white/30 text-xs">Spot Balance</p>
+            <h3 className="text-base-text-high-emphasis font-bold">
+              {balance.symbol}
+            </h3>
+            <p className="text-base-text-med-emphasis text-xs">Spot Balance</p>
           </div>
         </div>
-        <HiMiniArrowsRightLeft className="text-white/20" />
+        <HiMiniArrowsRightLeft className="text-base-text-med-emphasis" />
       </div>
 
       <div className="space-y-2">
         <div className="flex justify-between">
-          <span className="text-white/40 text-sm">Available</span>
-          <span className="text-white font-mono">
+          <span className="text-base-text-med-emphasis text-sm">Available</span>
+          <span className="text-base-text-high-emphasis font-mono">
             {available.toLocaleString(undefined, {
               minimumFractionDigits: 4,
               maximumFractionDigits: 8,
@@ -198,18 +206,18 @@ const AssetBalanceCard = ({ balance }: { balance: Balance }) => {
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-white/40 text-sm">Locked</span>
-          <span className="text-white/50 font-mono">
+          <span className="text-base-text-med-emphasis text-sm">Locked</span>
+          <span className="text-base-text-med-emphasis font-mono">
             {locked.toLocaleString(undefined, {
               minimumFractionDigits: 4,
               maximumFractionDigits: 8,
             })}
           </span>
         </div>
-        <div className="border-t border-white/10 pt-2 mt-2">
+        <div className="border-t border-base-border-light pt-2 mt-2">
           <div className="flex justify-between">
-            <span className="text-white/40 text-sm">Total</span>
-            <span className="text-white font-mono font-semibold">
+            <span className="text-base-text-med-emphasis text-sm">Total</span>
+            <span className="text-base-text-high-emphasis font-mono font-semibold">
               {total.toLocaleString(undefined, {
                 minimumFractionDigits: 4,
                 maximumFractionDigits: 8,
@@ -257,32 +265,38 @@ const AddUSDCModal = ({
 
       {/* Modal */}
       <div
-        className="relative bg-black border border-white/20 rounded-2xl p-8 w-full max-w-lg"
+        className="relative bg-base-background border border-base-border-light rounded-2xl p-8 w-full max-w-lg"
         style={{ animation: "scaleIn 0.2s ease-out" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center text-2xl">
+            <div className="w-14 h-14 rounded-full bg-base-text-high-emphasis text-base-background flex items-center justify-center text-2xl">
               <BiDollarCircle />
             </div>
             <div>
-              <h2 className="text-white text-xl font-bold">Add USDC</h2>
-              <p className="text-white/40 text-sm">Demo trading funds</p>
+              <h2 className="text-base-text-high-emphasis text-xl font-bold">
+                Add USDC
+              </h2>
+              <p className="text-base-text-med-emphasis text-sm">
+                Demo trading funds
+              </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-white/40 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-lg"
+            className="text-base-text-med-emphasis hover:text-base-text-high-emphasis transition-colors p-2 hover:bg-base-background-l2 rounded-lg"
           >
             <IoClose className="text-2xl" />
           </button>
         </div>
 
         {/* Current Balance Display */}
-        <div className="bg-white/5 border border-white/10 rounded-xl p-5 mb-6">
-          <p className="text-white/40 text-sm mb-1">Current USDC Balance</p>
-          <p className="text-white font-mono font-bold text-2xl">
+        <div className="bg-base-background-l2 border border-base-border-light rounded-xl p-5 mb-6">
+          <p className="text-base-text-med-emphasis text-sm mb-1">
+            Current USDC Balance
+          </p>
+          <p className="text-base-text-high-emphasis font-mono font-bold text-2xl">
             $
             {currentBalance.toLocaleString(undefined, {
               minimumFractionDigits: 2,
@@ -294,11 +308,11 @@ const AddUSDCModal = ({
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Amount Input */}
           <div>
-            <label className="block text-white/70 text-sm font-medium mb-3">
+            <label className="block text-base-text-high-emphasis text-sm font-medium mb-3">
               Amount to Add
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 text-xl">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base-text-med-emphasis text-xl">
                 $
               </span>
               <input
@@ -308,10 +322,10 @@ const AddUSDCModal = ({
                 placeholder="0.00"
                 min="0"
                 step="0.01"
-                className="w-full bg-black border border-white/20 rounded-xl pl-10 pr-20 py-4 text-white text-xl font-mono placeholder-white/20 focus:outline-none focus:border-white/50 transition-all"
+                className="w-full bg-base-background border border-base-border-med rounded-xl pl-10 pr-20 py-4 text-base-text-high-emphasis text-xl font-mono placeholder-base-text-med-emphasis focus:outline-none focus:border-base-text-high-emphasis transition-all"
                 required
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40">
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-base-text-med-emphasis">
                 USDC
               </span>
             </div>
@@ -319,7 +333,7 @@ const AddUSDCModal = ({
 
           {/* Quick Amount Buttons */}
           <div>
-            <label className="block text-white/70 text-sm font-medium mb-3">
+            <label className="block text-base-text-high-emphasis text-sm font-medium mb-3">
               Quick Select
             </label>
             <div className="grid grid-cols-3 gap-3">
@@ -330,8 +344,8 @@ const AddUSDCModal = ({
                   onClick={() => setAmount(quickAmount)}
                   className={`px-4 py-3 rounded-lg font-medium transition-all border ${
                     amount === quickAmount
-                      ? "bg-white text-black border-white"
-                      : "bg-black text-white/70 border-white/20 hover:border-white/40 hover:text-white"
+                      ? "bg-base-text-high-emphasis text-base-background border-base-text-high-emphasis"
+                      : "bg-base-background text-base-text-med-emphasis border-base-border-med hover:border-base-border-focus hover:text-base-text-high-emphasis"
                   }`}
                 >
                   ${parseInt(quickAmount).toLocaleString()}
@@ -342,10 +356,12 @@ const AddUSDCModal = ({
 
           {/* New Balance Preview */}
           {amount && parseFloat(amount) > 0 && (
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+            <div className="bg-base-background-l2 border border-base-border-light rounded-xl p-4">
               <div className="flex justify-between items-center">
-                <span className="text-white/40 text-sm">New Balance</span>
-                <span className="text-white font-mono font-bold text-lg">
+                <span className="text-base-text-med-emphasis text-sm">
+                  New Balance
+                </span>
+                <span className="text-base-text-high-emphasis font-mono font-bold text-lg">
                   $
                   {(currentBalance + parseFloat(amount)).toLocaleString(
                     undefined,
@@ -363,7 +379,7 @@ const AddUSDCModal = ({
           <button
             type="submit"
             disabled={isLoading || !amount || parseFloat(amount) <= 0}
-            className="w-full bg-white text-black font-bold py-4 rounded-xl hover:bg-white/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-base-text-high-emphasis text-base-background font-bold py-4 rounded-xl hover:opacity-90 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
@@ -379,7 +395,7 @@ const AddUSDCModal = ({
           </button>
 
           {/* Disclaimer */}
-          <p className="text-white/30 text-xs text-center">
+          <p className="text-base-text-med-emphasis text-xs text-center">
             This is demo money for paper trading. No real funds are involved.
           </p>
         </form>
@@ -480,17 +496,17 @@ export default function BalancePage() {
 
   if (isLoading || (authLoading && !user)) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-base-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <FaSpinner className="text-4xl text-white animate-spin" />
-          <p className="text-white/50">Loading wallet...</p>
+          <FaSpinner className="text-4xl text-base-text-high-emphasis animate-spin" />
+          <p className="text-base-text-med-emphasis">Loading wallet...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-base-background">
       {/* Toast */}
       {toast && (
         <Toast
@@ -513,23 +529,29 @@ export default function BalancePage() {
       <div className="max-w-5xl mx-auto px-6 py-10">
         {/* Header */}
         <div className="flex items-center gap-5 mb-10">
-          <div className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full bg-base-background-l2 text-base-text-high-emphasis flex items-center justify-center">
             <FaWallet className="text-2xl" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-white">Wallet</h1>
-            <p className="text-white/40">Manage your trading balance</p>
+            <h1 className="text-3xl font-bold text-base-text-high-emphasis">
+              Wallet
+            </h1>
+            <p className="text-base-text-med-emphasis">
+              Manage your trading balance
+            </p>
           </div>
         </div>
 
         {/* Demo Banner */}
-        <div className="border border-white/10 rounded-xl p-4 mb-8 flex items-center gap-4 bg-white/5">
-          <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center flex-shrink-0">
-            <FaCoins className="text-white/50" />
+        <div className="border border-base-border-light rounded-xl p-4 mb-8 flex items-center gap-4 bg-base-background-l2">
+          <div className="w-10 h-10 rounded-full border border-base-border-med flex items-center justify-center flex-shrink-0">
+            <FaCoins className="text-base-text-med-emphasis" />
           </div>
           <div>
-            <p className="text-white font-medium">Paper Trading Mode</p>
-            <p className="text-white/40 text-sm">
+            <p className="text-base-text-high-emphasis font-medium">
+              Paper Trading Mode
+            </p>
+            <p className="text-base-text-med-emphasis text-sm">
               Add USDC to start trading. Use USDC to buy other cryptocurrencies.
             </p>
           </div>
@@ -547,8 +569,10 @@ export default function BalancePage() {
         {otherBalances.length > 0 && (
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <h3 className="text-xl font-bold text-white">Your Holdings</h3>
-              <span className="text-white/30 text-sm">
+              <h3 className="text-xl font-bold text-base-text-high-emphasis">
+                Your Holdings
+              </h3>
+              <span className="text-base-text-med-emphasis text-sm">
                 ({otherBalances.length} assets)
               </span>
             </div>
@@ -562,20 +586,20 @@ export default function BalancePage() {
 
         {/* Empty State for Holdings */}
         {otherBalances.length === 0 && (
-          <div className="border border-white/10 rounded-xl p-10 text-center">
-            <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center mx-auto mb-4">
-              <HiMiniArrowsRightLeft className="text-2xl text-white/20" />
+          <div className="border border-base-border-light rounded-xl p-10 text-center">
+            <div className="w-16 h-16 rounded-full border border-base-border-light flex items-center justify-center mx-auto mb-4">
+              <HiMiniArrowsRightLeft className="text-2xl text-base-text-med-emphasis" />
             </div>
-            <h3 className="text-white font-bold text-lg mb-2">
+            <h3 className="text-base-text-high-emphasis font-bold text-lg mb-2">
               No Holdings Yet
             </h3>
-            <p className="text-white/40 text-sm mb-6">
+            <p className="text-base-text-med-emphasis text-sm mb-6">
               Start trading to acquire other cryptocurrencies
             </p>
             {usdcAvailable === 0 && (
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center gap-2 bg-white text-black font-bold px-6 py-3 rounded-lg hover:bg-white/90 transition-all"
+                className="inline-flex items-center gap-2 bg-base-text-high-emphasis text-base-background font-bold px-6 py-3 rounded-lg hover:opacity-90 transition-all"
               >
                 <FaPlus />
                 Add USDC to Start
@@ -585,38 +609,46 @@ export default function BalancePage() {
         )}
 
         {/* How It Works */}
-        <div className="mt-14 border border-white/10 rounded-xl p-8">
-          <h3 className="text-white font-bold text-lg mb-6">How It Works</h3>
+        <div className="mt-14 border border-base-border-light rounded-xl p-8">
+          <h3 className="text-base-text-high-emphasis font-bold text-lg mb-6">
+            How It Works
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-bold flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-base-background-l2 flex items-center justify-center text-base-text-high-emphasis font-bold flex-shrink-0">
                 1
               </div>
               <div>
-                <p className="text-white font-medium mb-1">Add USDC</p>
-                <p className="text-white/40 text-sm">
+                <p className="text-base-text-high-emphasis font-medium mb-1">
+                  Add USDC
+                </p>
+                <p className="text-base-text-med-emphasis text-sm">
                   Deposit demo USDC to your wallet
                 </p>
               </div>
             </div>
             <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-bold flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-base-background-l2 flex items-center justify-center text-base-text-high-emphasis font-bold flex-shrink-0">
                 2
               </div>
               <div>
-                <p className="text-white font-medium mb-1">Trade</p>
-                <p className="text-white/40 text-sm">
+                <p className="text-base-text-high-emphasis font-medium mb-1">
+                  Trade
+                </p>
+                <p className="text-base-text-med-emphasis text-sm">
                   Buy crypto using your USDC balance
                 </p>
               </div>
             </div>
             <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-bold flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-base-background-l2 flex items-center justify-center text-base-text-high-emphasis font-bold flex-shrink-0">
                 3
               </div>
               <div>
-                <p className="text-white font-medium mb-1">Manage</p>
-                <p className="text-white/40 text-sm">
+                <p className="text-base-text-high-emphasis font-medium mb-1">
+                  Manage
+                </p>
+                <p className="text-base-text-med-emphasis text-sm">
                   Track your portfolio and positions
                 </p>
               </div>

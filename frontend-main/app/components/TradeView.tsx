@@ -13,6 +13,19 @@ export function TradeView({ market }: { market: string }) {
   // Store klineData in a ref so the callback always has the latest data
   const klineDataRef = useRef<KLine[]>([]);
 
+  const [isDark, setIsDark] = useState(
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+      : true
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (e: MediaQueryListEvent) => setIsDark(e.matches);
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
   const intervalToSeconds = {
     "1m": 60,
     "5m": 300,
@@ -83,8 +96,8 @@ export function TradeView({ market }: { market: string }) {
             })),
           ].sort((x, y) => (x.timestamp < y.timestamp ? -1 : 1)) || [],
           {
-            background: "#0e0f14",
-            color: "white",
+            background: isDark ? "#0e0f14" : "#ffffff",
+            color: isDark ? "white" : "black",
           },
           async () => {
             if (fetching.current) return;
@@ -268,11 +281,11 @@ export function TradeView({ market }: { market: string }) {
       // Clear the klineData when component unmounts or interval changes
       klineDataRef.current = [];
     };
-  }, [market, chartInterval]);
+  }, [market, chartInterval, isDark]);
 
   return (
     <>
-      <div className="flex gap-2 mb-2 bg-black p-2 rounded">
+      <div className="flex gap-2 mb-2 dark:bg-black bg-white p-2 rounded">
         {["1m", "5m", "15m", "1h", "4h", "1d"].map((int) => (
           <button
             key={int}
@@ -280,7 +293,7 @@ export function TradeView({ market }: { market: string }) {
             className={`px-2 py-1 text-sm rounded ${
               chartInterval === int
                 ? "bg-blue-600 text-white"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                : "bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
             }`}
           >
             {int}

@@ -69,9 +69,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-base-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-neutral-950 p-8 rounded-2xl border border-neutral-900">
+        <div className="bg-base-background p-8 rounded-2xl border border-base-border-light shadow-xl">
           <Header
             title="Welcome back"
             subtitle="Sign in to your account to continue"
@@ -108,7 +108,7 @@ export default function LoginPage() {
               />
               <Link
                 href="/forgot-password"
-                className="text-sm text-neutral-400 hover:text-white"
+                className="text-sm text-base-text-med-emphasis hover:text-base-text-high-emphasis"
               >
                 Forgot password?
               </Link>
@@ -124,11 +124,11 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="mt-8 text-center text-sm text-neutral-500">
+          <p className="mt-8 text-center text-sm text-base-text-med-emphasis">
             Don't have an account?{" "}
             <Link
               href="/register"
-              className="text-white hover:underline font-medium"
+              className="text-base-text-high-emphasis hover:underline font-medium"
             >
               Register
             </Link>

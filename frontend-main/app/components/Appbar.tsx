@@ -65,13 +65,13 @@ export const Appbar = () => {
             <div className="flex items-center justify-center flex-row xs:flex gap-5 sm:mx-4 sm:gap-8">
               <div
                 onClick={() => router.push("/markets")}
-                className="focus:none items-center rounded-lg text-center font-semibold hover:opacity-90 hover:cursor-pointer focus:ring-blue-200 focus:outline-hidden disabled:opacity-80 disabled:hover:opacity-80 flex flex-col justify-center bg-transparent h-8 text-xs p-0 text-med-emphasis text-slate-300"
+                className="focus:none items-center rounded-lg text-center font-semibold hover:opacity-90 hover:cursor-pointer focus:ring-blue-200 focus:outline-hidden disabled:opacity-80 disabled:hover:opacity-80 flex flex-col justify-center bg-transparent h-8 text-xs p-0 text-med-emphasis dark:text-slate-200 text-slate-500"
               >
                 Market
               </div>
               <div
                 onClick={() => router.push("/trade/SOL_USDC")}
-                className="focus:none items-center rounded-lg text-center font-semibold hover:opacity-90 focus:ring-blue-200 focus:outline-hidden hover:cursor-pointer disabled:opacity-80 disabled:hover:opacity-80 flex flex-col justify-center bg-transparent h-8 text-xs p-0 text-med-emphasis text-slate-300"
+                className="focus:none items-center rounded-lg text-center font-semibold hover:opacity-90 focus:ring-blue-200 focus:outline-hidden hover:cursor-pointer disabled:opacity-80 disabled:hover:opacity-80 flex flex-col justify-center bg-transparent h-8 text-xs p-0 text-med-emphasis dark:text-slate-200 text-slate-500"
               >
                 Trade
               </div>
@@ -80,7 +80,7 @@ export const Appbar = () => {
 
           {/* SEARCH INPUT */}
           <div className="absolute left-1/2 hidden -translate-x-1/2 justify-self-center min-[1470px]:inline-flex">
-            <div className="flex items-center justify-between flex-row bg-base-background-l2 focus-within:ring-accent-blue w-[340px] flex-1 cursor-pointer overflow-hidden rounded-xl px-1 ring-0 focus-within:ring-2">
+            <div className="flex items-center justify-between flex-row bg-gray-100 dark:bg-base-background-l2 focus-within:ring-black dark:focus-within:ring-accent-blue w-[340px] flex-1 cursor-pointer overflow-hidden rounded-xl px-1 ring-0 focus-within:ring-2">
               <div className="flex items-center flex-row flex-1">
                 <div className="mx-2">
                   <CiSearch className="text-slate-500" />
@@ -88,7 +88,7 @@ export const Appbar = () => {
                 <input
                   aria-label="Search markets"
                   placeholder="Search markets"
-                  className="bg-base-background-l2 text-high-emphasis placeholder-low-emphasis h-8 w-full border-0 p-0 text-sm font-normal outline-hidden focus:ring-0"
+                  className="bg-gray-100 dark:bg-base-background-l2 text-high-emphasis placeholder-low-emphasis h-8 w-full border-0 p-0 text-sm font-normal outline-hidden focus:ring-0"
                   type="text"
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
@@ -103,7 +103,7 @@ export const Appbar = () => {
             {loading ? null : !user ? (
               <div className="flex flex-row">
                 <a
-                  className="bg-base-background-l2 my-auto mr-4 rounded-lg px-2 py-1.5 text-xs font-semibold text-nowrap text-white hover:opacity-90 sm:ml-4 sm:px-3 sm:text-sm"
+                  className="bg-base-background-l2  my-auto mr-4 rounded-lg px-2 py-1.5 text-xs font-semibold text-nowrap dark:text-white text-black hover:opacity-90 sm:ml-4 sm:px-3 sm:text-sm"
                   href="/login"
                 >
                   Log in
@@ -118,7 +118,7 @@ export const Appbar = () => {
             ) : (
               <div className="flex flex-row gap-4">
                 <a
-                  className="my-auto mr-6 rounded-lg bg-base-background-l2 px-2 py-1.5 text-xs font-semibold text-nowrap text-white hover:opacity-90 sm:px-3 sm:text-sm cursor-pointer"
+                  className="my-auto mr-6 rounded-lg bg-base-background-l2 px-2 py-1.5 text-xs font-semibold text-nowrap dark:text-white text-black hover:opacity-90 sm:px-3 sm:text-sm cursor-pointer"
                   href="/balance"
                 >
                   Profile

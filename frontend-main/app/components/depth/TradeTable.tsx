@@ -10,8 +10,8 @@ export const TradeTableHeader: React.FC<TradeTableHeaderProps> = ({
   market,
 }) => {
   return (
-    <div className="flex justify-between flex-row w-2/3 text-sm mb-2">
-      <div className="text-white">{"Price (USD)"}</div>
+    <div className="flex justify-between flex-row w-2/3 text-sm mb-2 mx-2">
+      <div className="dark:text-white text-slate-600">{"Price (USD)"}</div>
       <div className="text-slate-500">{`Qty (${market.split("_")[0]})`}</div>
     </div>
   );

@@ -1,61 +1,138 @@
 @import "tailwindcss";
 
-
+/* ===== LIGHT MODE (Default) ===== */
 :root {
+  /* Base colors */
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+
+  /* Background colors */
+  --color-body-background: #ffffff;
+  --color-base-background-l2: #e9e9e9; /* Gray-100 equivalent, opaque */
+  --color-base-background-l3: #aeaeae; /* Gray-200 equivalent, opaque */
+
+  /* Text colors */
+  --color-base-text-high-emphasis: rgb(20, 21, 27);
+  --color-base-text-medium-emphasis: rgb(100, 100, 110);
+
+  /* Border colors */
+  --color-base-border-med: #cccccc;
+  --color-base-border-light: rgb(220, 220, 225);
+
+  /* Accent colors */
+  --color-accent-blue: rgb(76, 148, 255);
+
+  /* Green theme */
+  --color-green-background-transparent: rgba(0, 194, 120, 0.12);
+  --color-green-border: rgba(0, 194, 120, 0.4);
+  --color-green-primary-button-background: rgb(0, 194, 120);
+  --color-green-primary-button-text: rgb(255, 255, 255);
+
+  /* Red theme */
+  --color-red-background-transparent: rgba(234, 56, 59, 0.12);
+  --color-red-border: rgba(234, 56, 59, 0.5);
 }
 
+/* ===== DARK MODE ===== */
 @media (prefers-color-scheme: dark) {
   :root {
+    /* Base colors */
     --foreground-rgb: 255, 255, 255;
     --background-start-rgb: 0, 0, 0;
     --background-end-rgb: 0, 0, 0;
+
+    /* Background colors */
+    --color-body-background: #0e0f14;
+    --color-base-background-l2: rgb(32, 33, 39);
+    --color-base-background-l3: rgb(42, 43, 50);
+
+    /* Text colors */
+    --color-base-text-high-emphasis: rgb(244, 244, 246);
+    --color-base-text-medium-emphasis: rgb(180, 180, 190);
+
+    /* Border colors */
+    --color-base-border-med: #444444;
+    --color-base-border-light: rgb(32, 33, 39);
+
+    /* Accent colors */
+    --color-accent-blue: rgb(76, 148, 255);
+
+    /* Green theme */
+    --color-green-background-transparent: rgba(0, 194, 120, 0.15);
+    --color-green-border: rgba(0, 194, 120, 0.5);
+    --color-green-primary-button-background: rgb(0, 194, 120);
+    --color-green-primary-button-text: rgb(20, 21, 27);
+
+    /* Red theme */
+    --color-red-background-transparent: rgba(234, 56, 59, 0.15);
+    --color-red-border: rgba(234, 56, 59, 0.6);
   }
 }
 
+/* ===== BASE STYLES ===== */
 body {
   color: rgb(var(--foreground-rgb));
-  background: #0e0f14;
+  background: var(--color-body-background);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* ===== TAILWIND THEME TOKENS ===== */
+@theme {
+  /* Font sizes */
+  --font-size-xs: 0.7rem;
+  --font-size-sm: 0.8rem;
+
+  /* Reference CSS variables for Tailwind classes */
+  --color-body-bg: var(--color-body-background);
+  --color-surface-l2: var(--color-base-background-l2);
+  --color-surface-l3: var(--color-base-background-l3);
+
+  /* Aliases for backwards compatibility with existing code */
+  --color-base-background-l2: var(--color-base-background-l2);
+  --color-base-background-l3: var(--color-base-background-l3);
+  --color-base-text-high-emphasis: var(--color-base-text-high-emphasis);
+  --color-base-text-med-emphasis: var(--color-base-text-medium-emphasis);
+  --color-base-border-med: var(--color-base-border-med);
+  --color-base-border-light: var(--color-base-border-light);
+  --color-accent-blue: var(--color-accent-blue);
+
+  --color-text-primary: var(--color-base-text-high-emphasis);
+  --color-text-secondary: var(--color-base-text-medium-emphasis);
+  --color-border-default: var(--color-base-border-med);
+  --color-border-subtle: var(--color-base-border-light);
+  --color-accent: var(--color-accent-blue);
+
+  /* Semantic colors */
+  --color-success-bg: var(--color-green-background-transparent);
+  --color-success-border: var(--color-green-border);
+  --color-success-solid: var(--color-green-primary-button-background);
+  --color-error-bg: var(--color-red-background-transparent);
+  --color-error-border: var(--color-red-border);
+}
+
+/* ===== UTILITIES ===== */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
 }
 
-
-@theme {
-  /* Font sizes - using --font-size-* */
-  --font-size-xs: 0.7rem;
-  --font-size-sm: 0.8rem;
-  
-  /* Custom colors - using --color-* */
-  --color-green-background-transparent: rgba(0, 194, 120, 0.12);
-  --color-red-background-transparent: rgba(234, 56, 59, 0.12);
-  --color-base-background-l2: rgb(32, 33, 39);
-  --color-base-background-l3: rgb(32, 33, 39);
-  --color-green-primary-button-background: rgb(0, 194, 120);
-  
-  /* Border colors - using --color-* (they're all colors) */
-  --color-red-border: rgba(234, 56, 59, 0.5);
-  --color-green-border: rgba(0, 194, 120, 0.4);
-  --color-base-border-med: #cccccc;
-  --color-accent-blue: rgb(76, 148, 255);
-  --color-base-border-light: rgb(32, 33, 39);
-  --color-base-text-high-emphasis: rgb(244, 244, 246);
-  
-  /* Text colors - using --color-* */
-  --color-green-primary-button-text: rgb(20, 21, 27);
-}
-
-/* Custom utilities for gradients (if needed) */
 @utility bg-gradient-radial {
   background-image: radial-gradient(var(--tw-gradient-stops));
 }
 
 @utility bg-gradient-conic {
-  background-image: conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops));
+  background-image: conic-gradient(
+    from 180deg at 50% 50%,
+    var(--tw-gradient-stops)
+  );
+}
+
+.text-green-text {
+  color: var(--color-green-primary-button-background);
+}
+
+.text-red-text {
+  color: rgb(234, 56, 59);
 }

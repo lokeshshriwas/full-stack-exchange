@@ -161,7 +161,7 @@ export function SwapUI({
                 <button
                   type="button"
                   onClick={() => router.push("/register")}
-                  className="font-semibold focus:ring-blue-200 text-center h-12 rounded-xl text-base px-4 py-2 my-4 bg-white text-black hover:opacity-90 active:scale-98"
+                  className="font-semibold focus:ring-blue-200 text-center h-12 rounded-xl text-base px-4 py-2 my-4 bg-gray-200 text-neutral-900 hover:bg-gray-300 dark:bg-base-background-l2 dark:text-white dark:border dark:border-base-border-light/10 dark:hover:bg-base-background-l3 active:scale-98"
                 >
                   Sign up to trade
                 </button>
@@ -244,12 +244,20 @@ function BuyButton({
     <div
       className={`flex flex-col -mb-0.5 flex-1 cursor-pointer justify-center border-b-2 p-4 ${
         activeTab === "buy"
-          ? "border-b-green-border bg-green-background-transparent"
+          ? "border-b-green-border bg-green-500/10"
           : "border-b-base-border-med hover:border-b-base-border-focus"
       }`}
       onClick={() => setActiveTab("buy")}
     >
-      <p className="text-center text-sm font-semibold text-green-text">Buy</p>
+      <p
+        className={`text-center text-sm font-semibold ${
+          activeTab === "buy"
+            ? " dark:text-white text-black dark:text-green-text"
+            : "text-green-text"
+        }`}
+      >
+        Buy
+      </p>
     </div>
   );
 }
@@ -265,12 +273,20 @@ function SellButton({
     <div
       className={`flex flex-col -mb-0.5 flex-1 cursor-pointer justify-center border-b-2 p-4 ${
         activeTab === "sell"
-          ? "border-b-red-border bg-red-background-transparent"
+          ? "border-b-red-border bg-red-500/10"
           : "border-b-base-border-med hover:border-b-base-border-focus"
       }`}
       onClick={() => setActiveTab("sell")}
     >
-      <p className="text-center text-sm font-semibold text-red-text">Sell</p>
+      <p
+        className={`text-center text-sm font-semibold ${
+          activeTab === "sell"
+            ? "dark:text-white text-black dark:text-red-text"
+            : "text-red-text"
+        }`}
+      >
+        Sell
+      </p>
     </div>
   );
 }

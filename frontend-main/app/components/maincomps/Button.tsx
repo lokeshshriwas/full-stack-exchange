@@ -18,15 +18,15 @@ const Button: React.FC<ButtonProps> = ({
   disabled = false,
 }) => {
   const baseStyles =
-    "font-medium rounded-lg px-6 py-3 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-neutral-900";
+    "font-medium rounded-lg px-6 py-3 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-base-background";
 
   const variants = {
     primary:
-      "bg-white text-neutral-900 hover:bg-neutral-200 focus:ring-white disabled:bg-neutral-600 disabled:text-neutral-400",
+      "bg-base-background-l2 text-neutral-900 hover:bg-gray-300 dark:bg-base-background-l2 dark:text-white dark:border dark:border-base-border-light/10 dark:hover:bg-base-background-l3 focus:ring-base-border-med disabled:opacity-50 disabled:cursor-not-allowed",
     secondary:
-      "bg-neutral-800 text-white border border-neutral-700 hover:bg-neutral-700 focus:ring-neutral-500",
+      "bg-base-background-l2 text-base-text-high-emphasis border border-base-border-light hover:border-base-border-med focus:ring-base-border-med",
     ghost:
-      "bg-transparent text-neutral-400 hover:text-white hover:bg-neutral-800 focus:ring-neutral-500",
+      "bg-transparent text-base-text-med-emphasis hover:text-base-text-high-emphasis hover:bg-base-background-l2 focus:ring-base-border-med",
   };
 
   return (

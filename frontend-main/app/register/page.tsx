@@ -178,11 +178,17 @@ function RegisterForm() {
           label={
             <span>
               I agree to the{" "}
-              <Link href="/terms" className="text-white hover:underline">
+              <Link
+                href="/terms"
+                className="text-base-text-high-emphasis hover:underline"
+              >
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="/privacy" className="text-white hover:underline">
+              <Link
+                href="/privacy"
+                className="text-base-text-high-emphasis hover:underline"
+              >
                 Privacy Policy
               </Link>
             </span>
@@ -229,9 +235,9 @@ function RegisterFormSkeleton() {
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-base-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-neutral-950 p-8 rounded-2xl border border-neutral-900">
+        <div className="bg-base-background p-8 rounded-2xl border border-base-border-light shadow-xl">
           <Header
             title="Create an account"
             subtitle="Start your journey with us today"
@@ -241,11 +247,11 @@ export default function RegisterPage() {
             <RegisterForm />
           </Suspense>
 
-          <p className="mt-8 text-center text-sm text-neutral-500">
+          <p className="mt-8 text-center text-sm text-base-text-med-emphasis">
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-white hover:underline font-medium"
+              className="text-base-text-high-emphasis hover:underline font-medium"
             >
               Login
             </Link>

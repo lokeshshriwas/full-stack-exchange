@@ -27,18 +27,18 @@ const Checkbox: React.FC<CheckboxProps> = ({
           <div
             className={`w-5 h-5 rounded border-2 transition-all duration-200 flex items-center justify-center ${
               checked
-                ? "bg-white border-white"
+                ? "bg-base-text-high-emphasis border-base-text-high-emphasis"
                 : error
                 ? "border-red-500"
-                : "border-neutral-700 group-hover:border-neutral-500"
+                : "border-base-border-med group-hover:border-base-text-med-emphasis"
             }`}
           >
             {checked && (
-              <FiCheck className="text-neutral-900 text-sm stroke-[3]" />
+              <FiCheck className="dark:text-black text-white text-sm stroke-[3]" />
             )}
           </div>
         </div>
-        <span className="text-sm text-neutral-400 group-hover:text-neutral-300 transition-colors">
+        <span className="text-sm text-base-text-med-emphasis group-hover:text-base-text-high-emphasis transition-colors">
           {label}
         </span>
       </label>

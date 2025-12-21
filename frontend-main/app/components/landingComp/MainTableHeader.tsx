@@ -9,23 +9,25 @@ const MainTableHeader = () => {
       <div className="items-center justify-center flex-row flex gap-2">
         <div
           className={`flex justify-center flex-col cursor-pointer rounded-lg py-1 font-medium outline-hidden hover:opacity-90 text-high-emphasis px-3 h-8 text-sm ${
-            activeTab == "spot" && "bg-[#3c3b3b]"
+            activeTab == "spot" && "bg-gray-200 dark:bg-[#3c3b3b]"
           } `}
           onClick={() => setActiveTab("spot")}
         >
           Spot
         </div>
-        <div className={`flex justify-center flex-col cursor-pointer rounded-lg py-1 font-medium outline-hidden hover:opacity-90 text-high-emphasis px-3 h-8 text-sm ${
-            activeTab == "futures" && "bg-[#3c3b3b]"
+        <div
+          className={`flex justify-center flex-col cursor-pointer rounded-lg py-1 font-medium outline-hidden hover:opacity-90 text-high-emphasis px-3 h-8 text-sm ${
+            activeTab == "futures" && "bg-gray-200 dark:bg-[#3c3b3b]"
           } `}
-        onClick={() => setActiveTab("futures")}
+          onClick={() => setActiveTab("futures")}
         >
           Futures
         </div>
-        <div className={`flex justify-center flex-col cursor-pointer rounded-lg py-1 font-medium outline-hidden hover:opacity-90 text-high-emphasis px-3 h-8 text-sm ${
-            activeTab == "lend" && "bg-[#3c3b3b]"
+        <div
+          className={`flex justify-center flex-col cursor-pointer rounded-lg py-1 font-medium outline-hidden hover:opacity-90 text-high-emphasis px-3 h-8 text-sm ${
+            activeTab == "lend" && "bg-gray-200 dark:bg-[#3c3b3b]"
           } `}
-        onClick={() => setActiveTab("lend")}
+          onClick={() => setActiveTab("lend")}
         >
           Lend
         </div>

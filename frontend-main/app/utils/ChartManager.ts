@@ -45,7 +45,7 @@ export class ChartManager {
           type: ColorType.Solid,
           color: layout.background,
         },
-        textColor: "white",
+        textColor: layout.color,
       },
     });
     this.chart = chart;

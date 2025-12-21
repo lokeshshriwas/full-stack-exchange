@@ -10,7 +10,7 @@ interface InputProps {
   error?: string;
   icon?: React.ReactNode;
   name?: string;
-  disabled?: boolean; 
+  disabled?: boolean;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -22,7 +22,7 @@ const Input: React.FC<InputProps> = ({
   error,
   icon,
   name,
-  disabled
+  disabled,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password";
@@ -47,11 +47,11 @@ const Input: React.FC<InputProps> = ({
           onChange={onChange}
           placeholder={placeholder}
           disabled={disabled}
-          className={`w-full bg-neutral-900 border ${
-            error ? "border-red-500" : "border-neutral-800"
+          className={`w-full bg-base-background-l2 border ${
+            error ? "border-red-500" : "border-base-border-med"
           } 
-            rounded-lg px-4 py-3 text-white placeholder-neutral-600 
-            focus:outline-none focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600
+            rounded-lg px-4 py-3 text-base-text-high-emphasis placeholder-base-text-med-emphasis 
+            focus:outline-none focus:border-base-text-high-emphasis focus:ring-1 focus:ring-base-text-high-emphasis
             transition-all duration-200 ${icon ? "pl-12" : ""} ${
             isPassword ? "pr-12" : ""
           }`}

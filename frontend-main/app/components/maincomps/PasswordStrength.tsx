@@ -41,7 +41,7 @@ const PasswordStrength: React.FC<PasswordStrengthProps> = ({ password }) => {
           <div
             key={level}
             className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-              level <= strength ? getStrengthColor() : "bg-neutral-800"
+              level <= strength ? getStrengthColor() : "bg-base-background-l3"
             }`}
           />
         ))}
