@@ -57,3 +57,20 @@ export interface SymbolData {
   symbol: string;    
   data: CandleData[];
 }
+
+export interface Balance {
+  user_id: number;
+  asset_id: number;
+  available: string;
+  locked: string;
+  symbol: string;
+  decimals: number;
+}
+
+export interface Cryptocurrency {
+  symbol: string;
+  name: string;
+  icon: React.ReactNode;
+  decimals: number;
+  isStablecoin?: boolean;
+}

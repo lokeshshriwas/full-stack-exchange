@@ -5,9 +5,6 @@ import {
   FaWallet,
   FaPlus,
   FaCoins,
-  FaLock,
-  FaCheckCircle,
-  FaTimesCircle,
   FaSpinner,
   FaBitcoin,
   FaEthereum,
@@ -19,389 +16,47 @@ import {
   SiCardano,
   SiDogecoin,
   SiPolygon,
+  SiLitecoin,
+  SiChainlink,
 } from "react-icons/si";
 import { RiCoinLine } from "react-icons/ri";
-import { IoClose } from "react-icons/io5";
 import { BiDollarCircle } from "react-icons/bi";
 import { HiMiniArrowsRightLeft } from "react-icons/hi2";
 import { useAuth } from "../context/AuthContext";
+import toast from "react-hot-toast";
+import AddCryptoModal from "../components/balance/AddCryptoModal";
+import { Balance, Cryptocurrency } from "../utils/types";
+import USDCBalanceCard from "../components/balance/USDCBalanceCard";
+import AssetBalanceCard from "../components/balance/AssetBalanceCard";
 
 const API_BASE_URL = "http://localhost:8080/api/v2";
 
-// Types
-interface Balance {
-  user_id: number;
-  asset_id: number;
-  available: string;
-  locked: string;
-  symbol: string;
-  decimals: number;
-}
+
+// Available cryptocurrencies list
+export const AVAILABLE_CRYPTOCURRENCIES: Cryptocurrency[] = [
+  { symbol: "USDC", name: "USD Coin", icon: <BiDollarCircle />, decimals: 6, isStablecoin: true },
+  { symbol: "USDT", name: "Tether", icon: <BiDollarCircle />, decimals: 6, isStablecoin: true },
+  { symbol: "BTC", name: "Bitcoin", icon: <FaBitcoin />, decimals: 8 },
+  { symbol: "ETH", name: "Ethereum", icon: <FaEthereum />, decimals: 18 },
+  { symbol: "SOL", name: "Solana", icon: <SiSolana />, decimals: 9 },
+  { symbol: "BNB", name: "BNB", icon: <SiBinance />, decimals: 18 },
+  { symbol: "XRP", name: "Ripple", icon: <SiRipple />, decimals: 6 },
+  { symbol: "ADA", name: "Cardano", icon: <SiCardano />, decimals: 6 },
+  { symbol: "DOGE", name: "Dogecoin", icon: <SiDogecoin />, decimals: 8 },
+  { symbol: "MATIC", name: "Polygon", icon: <SiPolygon />, decimals: 18 },
+  { symbol: "LTC", name: "Litecoin", icon: <SiLitecoin />, decimals: 8 },
+  { symbol: "LINK", name: "Chainlink", icon: <SiChainlink />, decimals: 18 },
+];
 
 // Icon mapping
-const getAssetIcon = (symbol: string): React.ReactNode => {
-  const iconMap: { [key: string]: React.ReactNode } = {
-    USDC: <BiDollarCircle />,
-    BTC: <FaBitcoin />,
-    ETH: <FaEthereum />,
-    SOL: <SiSolana />,
-    BNB: <SiBinance />,
-    XRP: <SiRipple />,
-    ADA: <SiCardano />,
-    DOGE: <SiDogecoin />,
-    MATIC: <SiPolygon />,
-  };
-  return iconMap[symbol] || <RiCoinLine />;
+export const getAssetIcon = (symbol: string): React.ReactNode => {
+  const crypto = AVAILABLE_CRYPTOCURRENCIES.find((c) => c.symbol === symbol);
+  return crypto?.icon || <RiCoinLine />;
 };
 
-// Toast Component
-const Toast = ({
-  message,
-  type,
-  onClose,
-}: {
-  message: string;
-  type: "success" | "error";
-  onClose: () => void;
-}) => {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 3000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  return (
-    <div
-      className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-4 rounded-lg border ${
-        type === "success"
-          ? "bg-black border-white/20 text-white"
-          : "bg-black border-red-500/50 text-red-400"
-      }`}
-      style={{ animation: "slideIn 0.3s ease-out" }}
-    >
-      {type === "success" ? (
-        <FaCheckCircle className="text-lg text-white" />
-      ) : (
-        <FaTimesCircle className="text-lg" />
-      )}
-      <span className="font-medium">{message}</span>
-      <button onClick={onClose} className="ml-2 hover:opacity-70">
-        <IoClose />
-      </button>
-    </div>
-  );
-};
-
-// USDC Balance Card (Main Card)
-const USDCBalanceCard = ({
-  balance,
-  onAddClick,
-}: {
-  balance: Balance | null;
-  onAddClick: () => void;
-}) => {
-  const available = balance ? parseFloat(balance.available) : 0;
-  const locked = balance ? parseFloat(balance.locked) : 0;
-  const total = available + locked;
-
-  return (
-    <div className="bg-base-background border border-base-border-light rounded-2xl p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-base-text-high-emphasis dark:text-black text-white flex items-center justify-center text-3xl">
-            <BiDollarCircle />
-          </div>
-          <div>
-            <h3 className="text-base-text-high-emphasis font-bold text-2xl">
-              USDC
-            </h3>
-            <p className="text-base-text-med-emphasis text-sm">
-              Trading Currency
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={onAddClick}
-          className="flex items-center gap-2 bg-base-text-high-emphasis dark:text-black text-white font-bold px-6 py-3 rounded-lg hover:opacity-90 transition-all"
-        >
-          <FaPlus />
-          Add Funds
-        </button>
-      </div>
-
-      <div className="grid grid-cols-3 gap-6">
-        <div className="bg-base-background-l2 rounded-xl p-5 border border-base-border-light">
-          <p className="text-base-text-med-emphasis text-sm mb-2 flex items-center gap-2">
-            <FaCoins className="text-base-text-med-emphasis" /> Available
-          </p>
-          <p className="text-base-text-high-emphasis font-mono font-bold text-2xl">
-            $
-            {available.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </p>
-        </div>
-
-        <div className="bg-base-background-l2 rounded-xl p-5 border border-base-border-light">
-          <p className="text-base-text-med-emphasis text-sm mb-2 flex items-center gap-2">
-            <FaLock className="text-base-text-med-emphasis" /> In Orders
-          </p>
-          <p className="text-base-text-med-emphasis font-mono font-bold text-2xl">
-            $
-            {locked.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </p>
-        </div>
-
-        <div className="bg-base-background-l2 rounded-xl p-5 border border-base-border-light">
-          <p className="text-base-text-med-emphasis text-sm mb-2">
-            Total Balance
-          </p>
-          <p className="text-base-text-high-emphasis font-mono font-bold text-2xl">
-            $
-            {total.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Other Asset Balance Card
-const AssetBalanceCard = ({ balance }: { balance: Balance }) => {
-  const available = parseFloat(balance.available);
-  const locked = parseFloat(balance.locked);
-  const total = available + locked;
-
-  return (
-    <div className="bg-base-background border border-base-border-light rounded-xl p-5 hover:border-base-border-med transition-all">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-base-background-l2 border border-base-border-light flex items-center justify-center text-xl text-base-text-high-emphasis">
-            {getAssetIcon(balance.symbol)}
-          </div>
-          <div>
-            <h3 className="text-base-text-high-emphasis font-bold">
-              {balance.symbol}
-            </h3>
-            <p className="text-base-text-med-emphasis text-xs">Spot Balance</p>
-          </div>
-        </div>
-        <HiMiniArrowsRightLeft className="text-base-text-med-emphasis" />
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex justify-between">
-          <span className="text-base-text-med-emphasis text-sm">Available</span>
-          <span className="text-base-text-high-emphasis font-mono">
-            {available.toLocaleString(undefined, {
-              minimumFractionDigits: 4,
-              maximumFractionDigits: 8,
-            })}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-base-text-med-emphasis text-sm">Locked</span>
-          <span className="text-base-text-med-emphasis font-mono">
-            {locked.toLocaleString(undefined, {
-              minimumFractionDigits: 4,
-              maximumFractionDigits: 8,
-            })}
-          </span>
-        </div>
-        <div className="border-t border-base-border-light pt-2 mt-2">
-          <div className="flex justify-between">
-            <span className="text-base-text-med-emphasis text-sm">Total</span>
-            <span className="text-base-text-high-emphasis font-mono font-semibold">
-              {total.toLocaleString(undefined, {
-                minimumFractionDigits: 4,
-                maximumFractionDigits: 8,
-              })}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Add USDC Modal
-const AddUSDCModal = ({
-  isOpen,
-  onClose,
-  onAddBalance,
-  isLoading,
-  currentBalance,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onAddBalance: (amount: string) => void;
-  isLoading: boolean;
-  currentBalance: number;
-}) => {
-  const [amount, setAmount] = useState("");
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (amount && parseFloat(amount) > 0) {
-      onAddBalance(amount);
-      setAmount("");
-    }
-  };
-
-  const quickAmounts = ["100", "500", "1000", "5000", "10000", "50000"];
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/90" onClick={onClose} />
-
-      {/* Modal */}
-      <div
-        className="relative bg-base-background border border-base-border-light rounded-2xl p-8 w-full max-w-lg"
-        style={{ animation: "scaleIn 0.2s ease-out" }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-base-text-high-emphasis text-base-background flex items-center justify-center text-2xl">
-              <BiDollarCircle />
-            </div>
-            <div>
-              <h2 className="text-base-text-high-emphasis text-xl font-bold">
-                Add USDC
-              </h2>
-              <p className="text-base-text-med-emphasis text-sm">
-                Demo trading funds
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-base-text-med-emphasis hover:text-base-text-high-emphasis transition-colors p-2 hover:bg-base-background-l2 rounded-lg"
-          >
-            <IoClose className="text-2xl" />
-          </button>
-        </div>
-
-        {/* Current Balance Display */}
-        <div className="bg-base-background-l2 border border-base-border-light rounded-xl p-5 mb-6">
-          <p className="text-base-text-med-emphasis text-sm mb-1">
-            Current USDC Balance
-          </p>
-          <p className="text-base-text-high-emphasis font-mono font-bold text-2xl">
-            $
-            {currentBalance.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Amount Input */}
-          <div>
-            <label className="block text-base-text-high-emphasis text-sm font-medium mb-3">
-              Amount to Add
-            </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base-text-med-emphasis text-xl">
-                $
-              </span>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-                className="w-full bg-base-background border border-base-border-med rounded-xl pl-10 pr-20 py-4 text-base-text-high-emphasis text-xl font-mono placeholder-base-text-med-emphasis focus:outline-none focus:border-base-text-high-emphasis transition-all"
-                required
-              />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-base-text-med-emphasis">
-                USDC
-              </span>
-            </div>
-          </div>
-
-          {/* Quick Amount Buttons */}
-          <div>
-            <label className="block text-base-text-high-emphasis text-sm font-medium mb-3">
-              Quick Select
-            </label>
-            <div className="grid grid-cols-3 gap-3">
-              {quickAmounts.map((quickAmount) => (
-                <button
-                  key={quickAmount}
-                  type="button"
-                  onClick={() => setAmount(quickAmount)}
-                  className={`px-4 py-3 rounded-lg font-medium transition-all border ${
-                    amount === quickAmount
-                      ? "bg-base-text-high-emphasis text-base-background border-base-text-high-emphasis"
-                      : "bg-base-background text-base-text-med-emphasis border-base-border-med hover:border-base-border-focus hover:text-base-text-high-emphasis"
-                  }`}
-                >
-                  ${parseInt(quickAmount).toLocaleString()}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* New Balance Preview */}
-          {amount && parseFloat(amount) > 0 && (
-            <div className="bg-base-background-l2 border border-base-border-light rounded-xl p-4">
-              <div className="flex justify-between items-center">
-                <span className="text-base-text-med-emphasis text-sm">
-                  New Balance
-                </span>
-                <span className="text-base-text-high-emphasis font-mono font-bold text-lg">
-                  $
-                  {(currentBalance + parseFloat(amount)).toLocaleString(
-                    undefined,
-                    {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }
-                  )}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isLoading || !amount || parseFloat(amount) <= 0}
-            className="w-full bg-base-text-high-emphasis text-base-background font-bold py-4 rounded-xl hover:opacity-90 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <FaSpinner className="animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <FaPlus />
-                Add ${amount ? parseFloat(amount).toLocaleString() : "0"} USDC
-              </>
-            )}
-          </button>
-
-          {/* Disclaimer */}
-          <p className="text-base-text-med-emphasis text-xs text-center">
-            This is demo money for paper trading. No real funds are involved.
-          </p>
-        </form>
-      </div>
-    </div>
-  );
+// Get crypto info
+export const getCryptoInfo = (symbol: string): Cryptocurrency | undefined => {
+  return AVAILABLE_CRYPTOCURRENCIES.find((c) => c.symbol === symbol);
 };
 
 // Main Balance Page
@@ -410,10 +65,10 @@ export default function BalancePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingBalance, setIsAddingBalance] = useState(false);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
+  const [preSelectedSymbol, setPreSelectedSymbol] = useState<string | undefined>(
+    undefined
+  );
+
   const { user, isLoading: authLoading } = useAuth();
 
   // Demo user ID - Replace with actual auth
@@ -421,7 +76,6 @@ export default function BalancePage() {
 
   // Get USDC balance
   const usdcBalance = balances.find((b) => b.symbol === "USDC") || null;
-  const usdcAvailable = usdcBalance ? parseFloat(usdcBalance.available) : 0;
 
   // Get other balances (non-USDC)
   const otherBalances = balances.filter((b) => b.symbol !== "USDC");
@@ -452,17 +106,30 @@ export default function BalancePage() {
     }
   }, [userId]);
 
-  // Add USDC handler
-  const handleAddUSDC = async (amount: string) => {
+  // Open modal with optional pre-selected symbol
+  const openAddModal = (symbol?: string) => {
+    setPreSelectedSymbol(symbol);
+    setIsModalOpen(true);
+  };
+
+  // Close modal and reset
+  const closeAddModal = () => {
+    setIsModalOpen(false);
+    setPreSelectedSymbol(undefined);
+  };
+
+  // Add crypto handler - generic for any cryptocurrency
+  const handleAddCrypto = async (symbol: string, amount: string) => {
     setIsAddingBalance(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/balances/add-usdc`, {
+      const response = await fetch(`${API_BASE_URL}/balances/add-crypto`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId,
+          symbol,
           amount,
         }),
       });
@@ -470,25 +137,19 @@ export default function BalancePage() {
       const data = await response.json();
 
       if (response.ok) {
-        setToast({
-          message: `Successfully added $${parseFloat(
-            amount
-          ).toLocaleString()} USDC`,
-          type: "success",
-        });
-        setIsModalOpen(false);
+        const cryptoInfo = getCryptoInfo(symbol);
+        const formattedAmount = cryptoInfo?.isStablecoin
+          ? `$${parseFloat(amount).toLocaleString()}`
+          : `${parseFloat(amount).toLocaleString()} ${symbol}`;
+
+        toast.success(`Successfully added ${formattedAmount}`);
+        closeAddModal();
         await fetchBalances();
       } else {
-        setToast({
-          message: data.error || "Failed to add USDC",
-          type: "error",
-        });
+        toast.error(data.error || `Failed to add ${symbol}`);
       }
     } catch (error) {
-      setToast({
-        message: "Connection error. Please try again.",
-        type: "error",
-      });
+      toast.error("Connection error. Please try again.");
     } finally {
       setIsAddingBalance(false);
     }
@@ -507,44 +168,45 @@ export default function BalancePage() {
 
   return (
     <div className="min-h-screen bg-base-background">
-      {/* Toast */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
-
       {/* Modal */}
-      <AddUSDCModal
+      <AddCryptoModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAddBalance={handleAddUSDC}
+        onClose={closeAddModal}
+        onAddBalance={handleAddCrypto}
         isLoading={isAddingBalance}
-        currentBalance={usdcAvailable}
+        balances={balances}
+        preSelectedSymbol={preSelectedSymbol}
       />
 
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-6 py-10">
         {/* Header */}
-        <div className="flex items-center gap-5 mb-10">
-          <div className="w-14 h-14 rounded-full bg-base-background-l2 text-base-text-high-emphasis flex items-center justify-center">
-            <FaWallet className="text-2xl" />
+        <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 rounded-full bg-base-background-l2 text-base-text-high-emphasis flex items-center justify-center">
+              <FaWallet className="text-2xl" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-base-text-high-emphasis">
+                Wallet
+              </h1>
+              <p className="text-base-text-med-emphasis">
+                Manage your trading balance
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold text-base-text-high-emphasis">
-              Wallet
-            </h1>
-            <p className="text-base-text-med-emphasis">
-              Manage your trading balance
-            </p>
-          </div>
+          <button
+            onClick={() => openAddModal()}
+            className="flex items-center gap-2 bg-base-text-high-emphasis dark:text-black text-white font-bold px-6 py-3 rounded-lg hover:opacity-90 transition-all"
+          >
+            <FaPlus />
+            Add Crypto
+          </button>
         </div>
 
         {/* Demo Banner */}
         <div className="border border-base-border-light rounded-xl p-4 mb-8 flex items-center gap-4 bg-base-background-l2">
-          <div className="w-10 h-10 rounded-full border border-base-border-med flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-full border border-base-border-med flex items-center justify-center shrink-0">
             <FaCoins className="text-base-text-med-emphasis" />
           </div>
           <div>
@@ -552,7 +214,8 @@ export default function BalancePage() {
               Paper Trading Mode
             </p>
             <p className="text-base-text-med-emphasis text-sm">
-              Add USDC to start trading. Use USDC to buy other cryptocurrencies.
+              Add any cryptocurrency to your wallet. Use USDC to buy other
+              cryptocurrencies or add them directly.
             </p>
           </div>
         </div>
@@ -561,24 +224,30 @@ export default function BalancePage() {
         <div className="mb-10">
           <USDCBalanceCard
             balance={usdcBalance}
-            onAddClick={() => setIsModalOpen(true)}
+            onAddClick={() => openAddModal("USDC")}
           />
         </div>
 
         {/* Other Holdings */}
         {otherBalances.length > 0 && (
           <div>
-            <div className="flex items-center gap-3 mb-6">
-              <h3 className="text-xl font-bold text-base-text-high-emphasis">
-                Your Holdings
-              </h3>
-              <span className="text-base-text-med-emphasis text-sm">
-                ({otherBalances.length} assets)
-              </span>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <h3 className="text-xl font-bold text-base-text-high-emphasis">
+                  Your Holdings
+                </h3>
+                <span className="text-base-text-med-emphasis text-sm">
+                  ({otherBalances.length} assets)
+                </span>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {otherBalances.map((balance) => (
-                <AssetBalanceCard key={balance.asset_id} balance={balance} />
+                <AssetBalanceCard
+                  key={balance.asset_id}
+                  balance={balance}
+                  onAddClick={openAddModal}
+                />
               ))}
             </div>
           </div>
@@ -594,17 +263,16 @@ export default function BalancePage() {
               No Holdings Yet
             </h3>
             <p className="text-base-text-med-emphasis text-sm mb-6">
-              Start trading to acquire other cryptocurrencies
+              Start trading to acquire other cryptocurrencies or add them
+              directly
             </p>
-            {usdcAvailable === 0 && (
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center gap-2 bg-base-text-high-emphasis text-base-background font-bold px-6 py-3 rounded-lg hover:opacity-90 transition-all"
-              >
-                <FaPlus />
-                Add USDC to Start
-              </button>
-            )}
+            <button
+              onClick={() => openAddModal()}
+              className="inline-flex items-center gap-2 bg-base-text-high-emphasis dark:text-black text-white font-bold px-6 py-3 rounded-lg hover:opacity-90 transition-all"
+            >
+              <FaPlus />
+              Add Cryptocurrency
+            </button>
           </div>
         )}
 
@@ -615,20 +283,20 @@ export default function BalancePage() {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-base-background-l2 flex items-center justify-center text-base-text-high-emphasis font-bold flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-base-background-l2 flex items-center justify-center text-base-text-high-emphasis font-bold shrink-0">
                 1
               </div>
               <div>
                 <p className="text-base-text-high-emphasis font-medium mb-1">
-                  Add USDC
+                  Add Crypto
                 </p>
                 <p className="text-base-text-med-emphasis text-sm">
-                  Deposit demo USDC to your wallet
+                  Deposit any demo cryptocurrency to your wallet
                 </p>
               </div>
             </div>
             <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-base-background-l2 flex items-center justify-center text-base-text-high-emphasis font-bold flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-base-background-l2 flex items-center justify-center text-base-text-high-emphasis font-bold shrink-0">
                 2
               </div>
               <div>
@@ -636,12 +304,12 @@ export default function BalancePage() {
                   Trade
                 </p>
                 <p className="text-base-text-med-emphasis text-sm">
-                  Buy crypto using your USDC balance
+                  Buy and sell crypto using your balances
                 </p>
               </div>
             </div>
             <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-base-background-l2 flex items-center justify-center text-base-text-high-emphasis font-bold flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-base-background-l2 flex items-center justify-center text-base-text-high-emphasis font-bold shrink-0">
                 3
               </div>
               <div>

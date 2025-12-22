@@ -55,3 +55,4 @@ export const mostPopular = (tableData : any)=>{
   const mostPopular =  tableData.sort((a: any, b: any) => b.volume - a.volume);
   return mostPopular.slice(0, 5);
 }
+

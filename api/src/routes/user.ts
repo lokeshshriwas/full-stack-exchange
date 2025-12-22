@@ -303,15 +303,8 @@ userRouter.get("/me", async (req: Request, res: Response) => {
       });
     }
 
-    if (assetsResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Assets not found",
-      });
-    }
-
     const user = userResult.rows[0];
-    const assets = assetsResult.rows;
+    const assets = assetsResult?.rows;
 
     // 3. Send response FIRST (critical for latency)
     res.status(200).json({
@@ -321,10 +314,11 @@ userRouter.get("/me", async (req: Request, res: Response) => {
         fullName: user.full_name,
         email: user.email,
         createdAt: user.created_at,
-        balance: assets,
+        balance: assets.length > 0 ? assets : [],
       },
     });
 
+    if(assets === undefined || assets === null || assets.length === 0) return;
     // 4. Fire-and-forget: SYNC user balances to engine (NOT add!)
     // Build the balances object in the format the engine expects
     const balancesForEngine: { [key: string]: { available: number; locked: number } } = {};

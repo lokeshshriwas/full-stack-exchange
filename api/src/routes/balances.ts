@@ -150,4 +150,89 @@ balanceRouter.post("/add-usdc", async (req: Request, res: Response) => {
   }
 });
 
+balanceRouter.post("/add-crypto", async (req: Request, res: Response) => {
+  try {
+    const { userId, symbol, amount }: { userId: number; symbol: string; amount: string } = req.body;
+
+    // Validate required fields
+    if (!userId || !symbol || !amount) {
+      return res.status(400).json({
+        error: "userId, symbol, and amount are required",
+      });
+    }
+
+    // Validate amount
+    if (parseFloat(amount) <= 0) {
+      return res.status(400).json({
+        error: "Amount must be greater than 0",
+      });
+    }
+
+    // Validate symbol format (uppercase, alphanumeric)
+    const sanitizedSymbol = symbol.toUpperCase().trim();
+    if (!/^[A-Z0-9]{2,10}$/.test(sanitizedSymbol)) {
+      return res.status(400).json({
+        error: "Invalid symbol format",
+      });
+    }
+
+    // Get asset id by symbol
+    const assetResult = await pool.query(
+      `SELECT id, symbol, decimals FROM assets WHERE symbol = $1`,
+      [sanitizedSymbol]
+    );
+
+    if (assetResult.rows.length === 0) {
+      return res.status(404).json({
+        error: `Asset ${sanitizedSymbol} not found. Please ensure the asset exists.`,
+      });
+    }
+
+    const asset = assetResult.rows[0];
+    const assetId: number = asset.id;
+
+    // Upsert balance for the asset
+    await pool.query(
+      `INSERT INTO balances (user_id, asset_id, available, locked)
+       VALUES ($1, $2, $3, 0)
+       ON CONFLICT (user_id, asset_id)
+       DO UPDATE SET available = balances.available + $3`,
+      [userId, assetId, amount]
+    );
+
+    // Get updated balance
+    const updatedBalance = await pool.query(
+      `SELECT 
+        b.user_id,
+        b.asset_id,
+        b.available,
+        b.locked,
+        a.symbol,
+        a.decimals
+      FROM balances b
+      JOIN assets a ON b.asset_id = a.id
+      WHERE b.user_id = $1 AND a.symbol = $2`,
+      [userId, sanitizedSymbol]
+    );
+
+    // Push to Redis
+    RedisManager.getInstance().pushMessage({
+      type: ON_RAMP,
+      data: {
+        amount,
+        userId: userId.toString(),
+        txnId: (Math.random() * 1000000).toString(),
+        asset: sanitizedSymbol
+      }
+    });
+
+    res.json({
+      message: `${sanitizedSymbol} added successfully`,
+      balance: updatedBalance.rows[0],
+    });
+  } catch (error) {
+    console.error("Error adding crypto:", error);
+    res.status(500).json({ error: "Failed to add cryptocurrency" });
+  }
+});
 
