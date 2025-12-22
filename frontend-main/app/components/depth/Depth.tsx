@@ -86,6 +86,9 @@ export function Depth({ market }: { market: string }) {
       "trade",
       (data: any) => {
         setTrades((originalTrades = []) => {
+          if (Array.isArray(data)) {
+            return data;
+          }
           let updatedTrades = [...originalTrades];
 
           const existingIndex = updatedTrades.findIndex(

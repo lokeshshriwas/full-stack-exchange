@@ -49,7 +49,7 @@ export class Engine {
     if (snapshot) {
       const snapshotSnapshot = JSON.parse(snapshot.toString());
       this.orderbooks = snapshotSnapshot.orderbooks.map((o: any) =>
-        new Orderbook(o.baseAsset, o.bids, o.asks, o.lastTradeId, o.currentPrice, o.quoteAsset)
+        new Orderbook(o.baseAsset, o.bids, o.asks, o.lastTradeId, o.currentPrice, o.quoteAsset, o.trades)
       );
       this.balances = new Map(snapshotSnapshot.balances);
 
@@ -137,6 +137,12 @@ export class Engine {
       supportedMarkets: Array.from(this.supportedMarkets.entries())
     };
     fs.writeFileSync("./snapshot.json", JSON.stringify(snapshotSnapshot));
+
+    this.orderbooks.forEach(o => {
+      RedisManager.getInstance().set(`orderbook_snapshot:${o.ticker()}`, JSON.stringify(o.getSnapshot()));
+      RedisManager.getInstance().set(`depth_snapshot:${o.ticker()}`, JSON.stringify(o.getDepth()));
+      RedisManager.getInstance().set(`trades_snapshot:${o.ticker()}`, JSON.stringify(o.trades));
+    });
   }
 
   process({ message, clientId }: { message: MessageFromApi, clientId: string }) {

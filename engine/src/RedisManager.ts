@@ -37,12 +37,12 @@ export class RedisManager {
     }
 
     public static getInstance() {
-        if (!this.instance)  {
+        if (!this.instance) {
             this.instance = new RedisManager();
         }
         return this.instance;
     }
-  
+
     public pushMessage(message: DbMessage) {
         this.client.lPush("db_processor", JSON.stringify(message));
     }
@@ -53,5 +53,13 @@ export class RedisManager {
 
     public sendToApi(clientId: string, message: MessageToApi) {
         this.client.publish(clientId, JSON.stringify(message));
+    }
+
+    public set(key: string, value: string) {
+        this.client.set(key, value);
+    }
+
+    public async get(key: string) {
+        return this.client.get(key);
     }
 }

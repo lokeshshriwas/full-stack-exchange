@@ -21,16 +21,6 @@ export async function getTicker(market: string): Promise<Ticker> {
   return ticker;
 }
 
-export async function getDepth(market: string): Promise<Depth> {
-  const response = await axios.get(`${BASE_URL}/depth?symbol=${market}`);
-  return response.data;
-}
-
-export async function getTrades(market: string): Promise<Trade[]> {
-  const response = await axios.get(`${BASE_URL}/trades?symbol=${market}`);
-  return response.data;
-}
-
 export async function getKlines(
   market: string,
   interval: string,

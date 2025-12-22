@@ -102,15 +102,27 @@ export class SignalingManager {
             callback({ bids: updatedBids, asks: updatedAsks });
           }
           if (type === "trade") {
-            const newTrade = {
-              price: message.data.p,
-              quantity: message.data.q,
-              id: message.data.t,
-              isBuyerMaker: message.data.m,
-              timestamp: Date.now(),
-              quoteQuantity: message.data.Q,
-            };
-            callback(newTrade);
+            if (message.data.trades) {
+              const newTrades = message.data.trades.map((t: any) => ({
+                price: t.p,
+                quantity: t.q,
+                id: t.t,
+                isBuyerMaker: t.m,
+                timestamp: t.T || Date.now(),
+                quoteQuantity: (Number(t.q) * Number(t.p)).toFixed(6), // Use Number and toFixed
+              }));
+              callback(newTrades);
+            } else {
+              const newTrade = {
+                price: message.data.p,
+                quantity: message.data.q,
+                id: message.data.t,
+                isBuyerMaker: message.data.m,
+                timestamp: Date.now(),
+                quoteQuantity: message.data.Q,
+              };
+              callback(newTrade);
+            }
           }
         });
       }

@@ -6,12 +6,18 @@ export class SubscriptionManager {
   private subscriptions: Map<string, string[]> = new Map();
   private reverseSubscriptions: Map<string, string[]> = new Map();
   private redisClient: RedisClientType;
+  private redisClientKV: RedisClientType;
 
   private constructor() {
     this.redisClient = createClient();
     this.redisClient.on("error", (err) => console.log("[WS] Redis Client Error", err));
     this.redisClient.on("connect", () => console.log("[WS] Redis Client Connected"));
     this.redisClient.connect();
+
+    this.redisClientKV = createClient();
+    this.redisClientKV.on("error", (err) => console.log("[WS] Redis KV Client Error", err));
+    this.redisClientKV.on("connect", () => console.log("[WS] Redis KV Client Connected"));
+    this.redisClientKV.connect();
   }
 
   public static getInstance() {
@@ -21,7 +27,7 @@ export class SubscriptionManager {
     return this.instance;
   }
 
-  public subscribe(userId: string, subscription: string) {
+  public async subscribe(userId: string, subscription: string) {
     console.log(`[WS] User ${userId} subscribing to ${subscription}`);
     if (this.subscriptions.get(userId)?.includes(subscription)) {
       return;
@@ -38,6 +44,45 @@ export class SubscriptionManager {
     if (this.reverseSubscriptions.get(subscription)?.length === 1) {
       console.log(`[WS] Subscribing to Redis channel: ${subscription}`);
       this.redisClient.subscribe(subscription, this.redisCallbackHandler);
+    }
+
+    if (subscription.startsWith("depth@")) {
+      const market = subscription.split("@")[1];
+      const snapshot = await this.redisClientKV.get(`depth_snapshot:${market}`);
+      if (snapshot) {
+        const parsedSnapshot = JSON.parse(snapshot);
+        UserManager.getInstance().getUser(userId)?.emit({
+          stream: subscription,
+          data: {
+            e: "depth",
+            bids: parsedSnapshot.bids,
+            asks: parsedSnapshot.asks
+          }
+        } as any);
+      }
+    }
+
+    if (subscription.startsWith("trade@")) {
+      const market = subscription.split("@")[1];
+      const snapshot = await this.redisClientKV.get(`trades_snapshot:${market}`);
+      if (snapshot) {
+        const parsedSnapshot = JSON.parse(snapshot);
+        UserManager.getInstance().getUser(userId)?.emit({
+          stream: subscription,
+          data: {
+            e: "trade",
+            trades: parsedSnapshot.map((t: any) => ({
+              e: "trade",
+              t: t.tradeId,
+              m: t.isBuyerMaker,
+              p: t.price,
+              q: t.quantity.toString(),
+              s: market,
+              T: t.timestamp
+            }))
+          }
+        } as any);
+      }
     }
   }
 

@@ -17,6 +17,14 @@ export interface Fill {
     markerOrderId: string;
 }
 
+export interface Trade {
+    price: string;
+    quantity: number;
+    tradeId: number;
+    timestamp: number;
+    isBuyerMaker: boolean;
+}
+
 export class Orderbook {
     bids: Order[];
     asks: Order[];
@@ -24,14 +32,16 @@ export class Orderbook {
     quoteAsset: string = BASE_CURRENCY;
     lastTradeId: number;
     currentPrice: number;
+    trades: Trade[] = [];
 
-    constructor(baseAsset: string, bids: Order[], asks: Order[], lastTradeId: number, currentPrice: number, quoteAsset?: string) {
+    constructor(baseAsset: string, bids: Order[], asks: Order[], lastTradeId: number, currentPrice: number, quoteAsset?: string, trades?: Trade[]) {
         this.bids = bids;
         this.asks = asks;
         this.baseAsset = baseAsset;
         this.quoteAsset = quoteAsset || BASE_CURRENCY;
         this.lastTradeId = lastTradeId || 0;
         this.currentPrice = currentPrice || 0;
+        this.trades = trades || [];
     }
 
     ticker() {
@@ -45,7 +55,8 @@ export class Orderbook {
             asks: this.asks,
             lastTradeId: this.lastTradeId,
             currentPrice: this.currentPrice,
-            quoteAsset: this.quoteAsset
+            quoteAsset: this.quoteAsset,
+            trades: this.trades
         }
     }
 
@@ -94,13 +105,27 @@ export class Orderbook {
                 const filledQty = Math.min((order.quantity - executedQty), this.asks[i].quantity);
                 executedQty += filledQty;
                 this.asks[i].filled += filledQty;
-                fills.push({
+
+                const fill: Fill = {
                     price: this.asks[i].price.toString(),
                     qty: filledQty,
                     tradeId: this.lastTradeId++,
                     otherUserId: this.asks[i].userId,
                     markerOrderId: this.asks[i].orderId
+                };
+
+                fills.push(fill);
+
+                this.trades.push({
+                    price: fill.price,
+                    quantity: fill.qty,
+                    tradeId: fill.tradeId,
+                    timestamp: Date.now(),
+                    isBuyerMaker: true
                 });
+                if (this.trades.length > 50) {
+                    this.trades.shift();
+                }
             }
         }
         for (let i = 0; i < this.asks.length; i++) {
@@ -124,13 +149,29 @@ export class Orderbook {
                 const amountRemaining = Math.min(order.quantity - executedQty, this.bids[i].quantity);
                 executedQty += amountRemaining;
                 this.bids[i].filled += amountRemaining;
-                fills.push({
+
+                const fill: Fill = {
                     price: this.bids[i].price.toString(),
                     qty: amountRemaining,
                     tradeId: this.lastTradeId++,
                     otherUserId: this.bids[i].userId,
                     markerOrderId: this.bids[i].orderId
+                };
+
+                fills.push(fill);
+
+                // For a Sell Order (Taker), the Bid (Maker) is the buyer.
+                // So isBuyerMaker is FALSE because the Taker is the Seller.
+                this.trades.push({
+                    price: fill.price,
+                    quantity: fill.qty,
+                    tradeId: fill.tradeId,
+                    timestamp: Date.now(),
+                    isBuyerMaker: false
                 });
+                if (this.trades.length > 50) {
+                    this.trades.shift();
+                }
             }
         }
         for (let i = 0; i < this.bids.length; i++) {
