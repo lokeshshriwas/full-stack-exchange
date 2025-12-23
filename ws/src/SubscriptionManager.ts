@@ -64,21 +64,23 @@ export class SubscriptionManager {
 
     if (subscription.startsWith("trade@")) {
       const market = subscription.split("@")[1];
-      const snapshot = await this.redisClientKV.get(`trades_snapshot:${market}`);
-      if (snapshot) {
-        const parsedSnapshot = JSON.parse(snapshot);
+      const tradesStrings = await this.redisClientKV.lRange(`trades_snapshot:${market}`, 0, -1);
+
+      if (tradesStrings && tradesStrings.length > 0) {
+        const trades = tradesStrings.map(t => JSON.parse(t));
+
         UserManager.getInstance().getUser(userId)?.emit({
           stream: subscription,
           data: {
             e: "trade",
-            trades: parsedSnapshot.map((t: any) => ({
+            trades: trades.map((t: any) => ({
               e: "trade",
-              t: t.tradeId,
-              m: t.isBuyerMaker,
-              p: t.price,
-              q: t.quantity.toString(),
-              s: market,
-              T: t.timestamp
+              t: t.t,
+              m: t.m,
+              p: t.p,
+              q: t.q,
+              s: t.s, // market
+              T: t.T
             }))
           }
         } as any);

@@ -82,4 +82,16 @@ export class RedisManager {
     public async get(key: string) {
         return this.client.get(key);
     }
+
+    public async pushToQueue(key: string, value: string) {
+        await this.client.lPush(key, value);
+    }
+
+    public async trimQueue(key: string, maxLength: number) {
+        await this.client.lTrim(key, 0, maxLength - 1);
+    }
+
+    public async getQueue(key: string) {
+        return await this.client.lRange(key, 0, -1);
+    }
 }

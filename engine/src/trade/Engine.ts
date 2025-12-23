@@ -76,6 +76,46 @@ export class Engine {
 
         // If we assume balances are in 'balances' table.
 
+        // Load recent trades from DB to restore Redis List
+        console.log("Loading recent trades from DB...");
+        const recentTradesResult = await pgClient.query("SELECT market, trade_json FROM recent_trades ORDER BY created_at ASC");
+        for (const row of recentTradesResult.rows) {
+          const trade = row.trade_json;
+          const market = row.market;
+
+          const tradePayload = {
+            e: "trade" as "trade",
+            t: trade.tradeId,
+            m: trade.isBuyerMaker,
+            p: trade.price,
+            q: trade.quantity,
+            s: market,
+            T: trade.timestamp
+          };
+
+          // Re-populate Engine/Orderbook trades array (if we want internal history)
+          const ob = this.orderbooks.find(o => o.ticker() === market);
+          if (ob) {
+            if (!ob.trades.find(t => t.tradeId === trade.tradeId)) {
+              ob.trades.push({
+                price: trade.price,
+                quantity: trade.quantity,
+                tradeId: trade.tradeId,
+                timestamp: trade.timestamp,
+                isBuyerMaker: trade.isBuyerMaker
+              });
+            }
+          }
+
+          // Restore Redis LIST
+          await RedisManager.getInstance().pushToQueue(`trades_snapshot:${market}`, JSON.stringify(tradePayload));
+        }
+
+        // Trim queues to ensure limit
+        for (const ob of this.orderbooks) {
+          await RedisManager.getInstance().trimQueue(`trades_snapshot:${ob.ticker()}`, 100);
+        }
+
       } else {
         // Fallback to snapshot.json
         let snapshot = null;
@@ -190,7 +230,9 @@ export class Engine {
     this.orderbooks.forEach(o => {
       RedisManager.getInstance().set(`orderbook_snapshot:${o.ticker()}`, JSON.stringify(o.getSnapshot()));
       RedisManager.getInstance().set(`depth_snapshot:${o.ticker()}`, JSON.stringify(o.getDepth()));
-      RedisManager.getInstance().set(`trades_snapshot:${o.ticker()}`, JSON.stringify(o.trades));
+      RedisManager.getInstance().set(`orderbook_snapshot:${o.ticker()}`, JSON.stringify(o.getSnapshot()));
+      RedisManager.getInstance().set(`depth_snapshot:${o.ticker()}`, JSON.stringify(o.getDepth()));
+      // RedisManager.getInstance().set(`trades_snapshot:${o.ticker()}`, JSON.stringify(o.trades)); // Removed, using List instead
 
       RedisManager.getInstance().pushMessage({
         type: "SNAPSHOT_SAVED",
@@ -481,7 +523,7 @@ export class Engine {
 
     this.createDbTrades(fills, market, userId);
     this.updateDbOrders(order, executedQty, fills, market);
-    this.publisWsDepthUpdates(fills, price, side, market);
+    this.publishWsDepthUpdates(fills, price, side, market);
     this.publishWsTrades(fills, userId, market);
 
     return { executedQty, fills, orderId: order.orderId };
@@ -709,18 +751,25 @@ export class Engine {
 
   publishWsTrades(fills: Fill[], userId: string, market: string) {
     fills.forEach(fill => {
+      const tradeData = {
+        e: "trade" as "trade",
+        t: fill.tradeId,
+        m: fill.otherUserId === userId,
+        p: fill.price,
+        q: fill.qty.toString(),
+        s: market,
+        o: fill.markerOrderId,
+        T: Date.now() // Ensure timestamp is present
+      };
+
       RedisManager.getInstance().publishMessage(`trade@${market}`, {
         stream: `trade@${market}`,
-        data: {
-          e: "trade",
-          t: fill.tradeId,
-          m: fill.otherUserId === userId,
-          p: fill.price,
-          q: fill.qty.toString(),
-          s: market,
-          o: fill.markerOrderId
-        }
+        data: tradeData
       });
+
+      // Push to Redis List and Trim to 100
+      RedisManager.getInstance().pushToQueue(`trades_snapshot:${market}`, JSON.stringify(tradeData));
+      RedisManager.getInstance().trimQueue(`trades_snapshot:${market}`, 100);
     });
   }
 
@@ -743,7 +792,7 @@ export class Engine {
     });
   }
 
-  publisWsDepthUpdates(fills: Fill[], price: string, side: "buy" | "sell", market: string) {
+  publishWsDepthUpdates(fills: Fill[], price: string, side: "buy" | "sell", market: string) {
     const orderbook = this.orderbooks.find(o => o.ticker() === market);
     if (!orderbook) {
       return;

@@ -49,6 +49,34 @@ async function main() {
 
       await pgClient.query(query, values);
       console.log(`✔ Inserted trade for ${symbol}`);
+
+      // Insert into recent_trades
+      const recentQuery = `
+          INSERT INTO recent_trades (market, trade_id, trade_json)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (market, trade_id) DO NOTHING
+      `;
+      const tradeJson = JSON.stringify({
+        tradeId: tradeId,
+        isBuyerMaker: isBuyerMaker,
+        price: price,
+        quantity: qty,
+        timestamp: timestamp,
+        // Add any other fields needed by frontend/engine
+      });
+      await pgClient.query(recentQuery, [symbol, tradeId, tradeJson]);
+
+      // Trim recent_trades to keep only last 100
+      const trimQuery = `
+          DELETE FROM recent_trades
+          WHERE id IN (
+              SELECT id FROM recent_trades
+              WHERE market = $1
+              ORDER BY trade_id DESC
+              OFFSET 100
+          )
+      `;
+      await pgClient.query(trimQuery, [symbol]);
     }
 
     if (data.type === "ORDER_PLACED") {

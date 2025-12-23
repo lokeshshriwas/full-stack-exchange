@@ -18,6 +18,10 @@ async function initializeDB() {
     DROP TABLE IF EXISTS markets;
     DROP TABLE IF EXISTS assets;
     DROP TABLE IF EXISTS users;
+    DROP TABLE IF EXISTS orders;
+    DROP TABLE IF EXISTS trades;
+    DROP TABLE IF EXISTS recent_trades;
+    DROP TABLE IF EXISTS orderbook_snapshots;
 
     -- USERS
     CREATE TABLE users (
@@ -72,6 +76,16 @@ async function initializeDB() {
       trade_id INT, -- Engine's internal trade ID
       order_id VARCHAR(50),
       ts TIMESTAMP DEFAULT NOW()
+    );
+
+    -- RECENT TRADES (Last 100 per market)
+    CREATE TABLE recent_trades (
+      id SERIAL PRIMARY KEY,
+      market VARCHAR(20) NOT NULL,
+      trade_id INT NOT NULL,
+      trade_json JSONB NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(market, trade_id)
     );
 
     -- ORDERS HISTORY
