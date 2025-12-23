@@ -16,6 +16,25 @@ type DbMessage = {
         market: string
     }
 } | {
+    type: "ORDER_PLACED",
+    data: {
+        orderId: string,
+        executedQty: number,
+        market: string,
+        price: string,
+        quantity: string,
+        side: "buy" | "sell",
+        userId: string
+    }
+} | {
+    type: "SNAPSHOT_SAVED",
+    data: {
+        market: string,
+        bids: any[],
+        asks: any[],
+        lastTradeId: number
+    }
+} | {
     type: typeof ORDER_UPDATE,
     data: {
         orderId: string,
@@ -24,6 +43,7 @@ type DbMessage = {
         price?: string,
         quantity?: string,
         side?: "buy" | "sell",
+        userId?: string
     }
 }
 

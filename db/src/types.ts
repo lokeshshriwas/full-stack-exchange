@@ -7,8 +7,27 @@ export type DbMessage = {
         quantity: string,
         quoteQuantity: string,
         timestamp: number,
-        market: string
+        market: string,
         orderId: string
+    }
+} | {
+    type: "ORDER_PLACED",
+    data: {
+        orderId: string,
+        executedQty: number,
+        market: string,
+        price: string,
+        quantity: string,
+        side: "buy" | "sell",
+        userId: string
+    }
+} | {
+    type: "SNAPSHOT_SAVED",
+    data: {
+        market: string,
+        bids: any[],
+        asks: any[],
+        lastTradeId: number
     }
 } | {
     type: "ORDER_UPDATE",

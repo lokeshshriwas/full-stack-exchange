@@ -61,6 +61,41 @@ async function initializeDB() {
       updated_at TIMESTAMP DEFAULT NOW(),
       PRIMARY KEY (user_id, market_id)
     );
+
+    -- TRADES HISTORY
+    CREATE TABLE trades (
+      id SERIAL PRIMARY KEY,
+      symbol VARCHAR(20) NOT NULL,
+      price NUMERIC(36,18) NOT NULL,
+      qty NUMERIC(36,18) NOT NULL,
+      isBuyerMaker BOOLEAN NOT NULL,
+      trade_id INT, -- Engine's internal trade ID
+      order_id VARCHAR(50),
+      ts TIMESTAMP DEFAULT NOW()
+    );
+
+    -- ORDERS HISTORY
+    CREATE TABLE orders (
+      id VARCHAR(50) PRIMARY KEY, -- orderId from Engine
+      user_id VARCHAR(50) NOT NULL, -- userId as string from Engine
+      symbol VARCHAR(20) NOT NULL,
+      price NUMERIC(36,18) NOT NULL,
+      qty NUMERIC(36,18) NOT NULL,
+      side VARCHAR(4) NOT NULL, -- 'buy' or 'sell'
+      filled NUMERIC(36,18) DEFAULT 0,
+      status VARCHAR(20) DEFAULT 'open', -- 'open', 'filled', 'partial', 'cancelled'
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+
+    -- ORDERBOOK SNAPSHOTS
+    CREATE TABLE orderbook_snapshots (
+      market VARCHAR(20) PRIMARY KEY,
+      bids JSONB NOT NULL,
+      asks JSONB NOT NULL,
+      last_trade_id INT NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
   `);
 
   await client.end();

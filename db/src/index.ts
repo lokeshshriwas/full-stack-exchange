@@ -50,6 +50,42 @@ async function main() {
       await pgClient.query(query, values);
       console.log(`✔ Inserted trade for ${symbol}`);
     }
+
+    if (data.type === "ORDER_PLACED") {
+      const query = `
+            INSERT INTO orders (id, user_id, symbol, price, qty, side, filled, status)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (id) DO UPDATE SET filled = $7, status = $8
+        `;
+      const values = [
+        data.data.orderId,
+        data.data.userId,
+        data.data.market,
+        data.data.price,
+        data.data.quantity,
+        data.data.side,
+        data.data.executedQty,
+        'open' // Default status, might need logic to determine if filled
+      ];
+      await pgClient.query(query, values);
+      console.log(`✔ Inserted/Updated order ${data.data.orderId}`);
+    }
+
+    if (data.type === "SNAPSHOT_SAVED") {
+      const query = `
+            INSERT INTO orderbook_snapshots (market, bids, asks, last_trade_id)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (market) DO UPDATE SET bids = $2, asks = $3, last_trade_id = $4, created_at = NOW()
+        `;
+      const values = [
+        data.data.market,
+        JSON.stringify(data.data.bids),
+        JSON.stringify(data.data.asks),
+        data.data.lastTradeId
+      ];
+      await pgClient.query(query, values);
+      console.log(`✔ Saved snapshot for ${data.data.market}`);
+    }
   }
 }
 

@@ -37,7 +37,7 @@ export const TradeTable: React.FC<TradeTableProps> = ({
           <TradeTableRow
             key={trade.id}
             price={trade.price}
-            quantity={trade.quantity}
+            quantity={Number(trade.quantity).toFixed(3)}
             timestamp={trade.timestamp}
             isBuyerMaker={trade.isBuyerMaker}
           />
@@ -74,7 +74,7 @@ export const TradeTableRow = ({
         {
           new Date(timestamp)
             .toLocaleTimeString("en-GB", {
-              hour12: false
+              hour12: false,
             })
             .split(" ")[0]
         }
