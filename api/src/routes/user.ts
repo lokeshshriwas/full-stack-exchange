@@ -1,4 +1,3 @@
-// user.ts
 import { Router, Request, Response } from "express";
 import pool from "../db";
 import bcrypt from "bcrypt";
@@ -31,7 +30,7 @@ const generateTokens = (userId: number, email: string) => {
   const accessToken = jwt.sign(
     { userId, email },
     JWT_SECRET,
-    { expiresIn: "15m" }
+    { expiresIn: "1d" }
   );
 
   const refreshToken = jwt.sign(
@@ -318,7 +317,7 @@ userRouter.get("/me", async (req: Request, res: Response) => {
       },
     });
 
-    if(assets === undefined || assets === null || assets.length === 0) return;
+    if (assets === undefined || assets === null || assets.length === 0) return;
     // 4. Fire-and-forget: SYNC user balances to engine (NOT add!)
     // Build the balances object in the format the engine expects
     const balancesForEngine: { [key: string]: { available: number; locked: number } } = {};

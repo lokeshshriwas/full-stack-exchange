@@ -8,12 +8,7 @@ import { Ticker } from "../types/toApi";
 
 export const BASE_CURRENCY = "USDC";
 
-interface UserBalance {
-  [key: string]: {
-    available: number;
-    locked: number;
-  }
-}
+
 
 interface MarketConfig {
   baseAsset: string;
@@ -23,7 +18,6 @@ interface MarketConfig {
 
 export class Engine {
   private orderbooks: Orderbook[] = [];
-  private balances: Map<string, UserBalance> = new Map();
   private supportedMarkets: Map<string, MarketConfig> = new Map();
   static initializeMarkets: boolean = false;
 
@@ -117,6 +111,7 @@ export class Engine {
         }
 
       } else {
+
         // Fallback to snapshot.json
         let snapshot = null;
         try {
@@ -132,14 +127,12 @@ export class Engine {
           this.orderbooks = snapshotSnapshot.orderbooks.map((o: any) =>
             new Orderbook(o.baseAsset, o.bids, o.asks, o.lastTradeId, o.currentPrice, o.quoteAsset, o.trades)
           );
-          this.balances = new Map(snapshotSnapshot.balances);
 
           if (snapshotSnapshot.supportedMarkets) {
             this.supportedMarkets = new Map(snapshotSnapshot.supportedMarkets);
           }
         } else {
           this.initializeOrderbooks();
-          this.setBaseBalances();
         }
       }
       await pgClient.end();
@@ -222,7 +215,6 @@ export class Engine {
   saveSnapshot() {
     const snapshotSnapshot = {
       orderbooks: this.orderbooks.map(o => o.getSnapshot()),
-      balances: Array.from(this.balances.entries()),
       supportedMarkets: Array.from(this.supportedMarkets.entries())
     };
     fs.writeFileSync("./snapshot.json", JSON.stringify(snapshotSnapshot));
@@ -246,7 +238,7 @@ export class Engine {
     });
   }
 
-  process({ message, clientId }: { message: MessageFromApi, clientId: string }) {
+  async process({ message, clientId }: { message: MessageFromApi, clientId: string }) {
     switch (message.type) {
       case CREATE_ORDER:
         try {
@@ -261,7 +253,7 @@ export class Engine {
             }
           }
 
-          const { executedQty, fills, orderId } = this.createOrder(
+          const { executedQty, fills, orderId } = await this.createOrder(
             market,
             message.data.price,
             message.data.quantity,
@@ -298,6 +290,7 @@ export class Engine {
               orderId: "",
               executedQty: 0,
               remainingQty: 0,
+              error: e.message
             }
           });
         }
@@ -327,28 +320,20 @@ export class Engine {
             throw new Error("No order found");
           }
 
-          const userBalance = this.balances.get(order.userId);
-          if (!userBalance) {
-            throw new Error("User balance not found");
-          }
-
           if (order.side === "buy") {
             const price = cancelOrderbook.cancelBid(order);
             const remainingQty = order.quantity - order.filled;
             const amountToUnlock = remainingQty * order.price;
 
-            this.ensureUserBalance(order.userId, marketConfig.quoteAsset);
-
-            const quoteBalance = userBalance[marketConfig.quoteAsset];
-            if (quoteBalance.locked < amountToUnlock) {
-              console.warn(`[Cancel] Locked amount mismatch. Expected: ${amountToUnlock}, Actual: ${quoteBalance.locked}`);
-              // Unlock whatever is locked to avoid negative balance
-              quoteBalance.available += quoteBalance.locked;
-              quoteBalance.locked = 0;
-            } else {
-              quoteBalance.available += amountToUnlock;
-              quoteBalance.locked -= amountToUnlock;
-            }
+            // Unlock: locked -= amount, available += amount
+            await RedisManager.getInstance().updateBalance(
+              order.userId,
+              marketConfig.quoteAsset,
+              amountToUnlock,
+              -amountToUnlock,
+              "cancel",
+              orderId
+            );
 
             if (price) {
               this.sendUpdatedDepthAt(price.toString(), cancelMarket);
@@ -357,17 +342,15 @@ export class Engine {
             const price = cancelOrderbook.cancelAsk(order);
             const remainingQty = order.quantity - order.filled;
 
-            this.ensureUserBalance(order.userId, marketConfig.baseAsset);
-
-            const baseBalance = userBalance[marketConfig.baseAsset];
-            if (baseBalance.locked < remainingQty) {
-              console.warn(`[Cancel] Locked amount mismatch. Expected: ${remainingQty}, Actual: ${baseBalance.locked}`);
-              baseBalance.available += baseBalance.locked;
-              baseBalance.locked = 0;
-            } else {
-              baseBalance.available += remainingQty;
-              baseBalance.locked -= remainingQty;
-            }
+            // Unlock: locked -= amount, available += amount
+            await RedisManager.getInstance().updateBalance(
+              order.userId,
+              marketConfig.baseAsset,
+              remainingQty,
+              -remainingQty,
+              "cancel",
+              orderId
+            );
 
             if (price) {
               this.sendUpdatedDepthAt(price.toString(), cancelMarket);
@@ -390,7 +373,8 @@ export class Engine {
             payload: {
               orderId: message.data.orderId,
               executedQty: 0,
-              remainingQty: 0
+              remainingQty: 0,
+              error: e.message
             }
           });
         }
@@ -428,7 +412,11 @@ export class Engine {
         const userId = message.data.userId;
         const amount = Number(message.data.amount);
         const asset = message.data.asset || BASE_CURRENCY;
-        this.onRamp(userId, amount, asset);
+
+        // Deposit: available += amount
+        await RedisManager.getInstance().updateBalance(
+          userId, asset, amount, 0, "deposit", Math.random().toString() // Generate unique ID for deposit
+        );
         console.log(`[Engine] User ${userId} on-ramped ${amount} ${asset}`);
         break;
 
@@ -462,12 +450,17 @@ export class Engine {
         break;
 
       case ENSURE_USER:
+        const { balances } = message.data;
         const ensureUserId = message.data.userId;
-        const ensureBalances = message.data.balances;
-        if (!this.balances.has(ensureUserId)) {
-          console.log(`[Engine] Syncing user ${ensureUserId} from API`);
-          this.balances.set(ensureUserId, ensureBalances);
+        for (const asset in balances) {
+          await RedisManager.getInstance().syncBalance(
+            ensureUserId,
+            asset,
+            balances[asset].available,
+            balances[asset].locked
+          );
         }
+        console.log(`[Engine] Ensured user ${ensureUserId} balances, ${JSON.stringify(balances)}`);
         break;
     }
   }
@@ -476,7 +469,8 @@ export class Engine {
     this.orderbooks.push(orderbook);
   }
 
-  createOrder(market: string, price: string, quantity: string, side: "buy" | "sell", userId: string) {
+
+  async createOrder(market: string, price: string, quantity: string, side: "buy" | "sell", userId: string) {
     const orderbook = this.orderbooks.find(o => o.ticker() === market);
     const marketConfig = this.getMarketConfig(market);
 
@@ -500,17 +494,15 @@ export class Engine {
       throw new Error("Invalid quantity: must be a positive number");
     }
 
-    // Ensure user has balance entries for both assets
-    this.ensureUserBalance(userId, baseAsset);
-    this.ensureUserBalance(userId, quoteAsset);
+    const orderId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
     // Check and lock funds BEFORE creating the order
-    this.checkAndLockFunds(baseAsset, quoteAsset, side, userId, numericPrice, numericQuantity);
+    await this.checkAndLockFunds(baseAsset, quoteAsset, side, userId, numericPrice, numericQuantity, orderId);
 
     const order: Order = {
       price: numericPrice,
       quantity: numericQuantity,
-      orderId: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+      orderId,
       filled: 0,
       side,
       userId
@@ -519,7 +511,7 @@ export class Engine {
     const { fills, executedQty } = orderbook.addOrder(order);
 
     // Update balances based on fills - pass orderPrice for price improvement calculation
-    this.updateBalance(userId, baseAsset, quoteAsset, side, fills, executedQty, numericPrice);
+    await this.updateBalance(userId, baseAsset, quoteAsset, side, fills, executedQty, numericPrice, orderId);
 
     this.createDbTrades(fills, market, userId);
     this.updateDbOrders(order, executedQty, fills, market);
@@ -530,73 +522,55 @@ export class Engine {
   }
 
   /**
-   * Ensure user has balance entry for a specific asset
+   * Check if user has sufficient funds and lock them using Redis atomic operations
    */
-  private ensureUserBalance(userId: string, asset: string) {
-    if (!this.balances.has(userId)) {
-      this.balances.set(userId, {});
-    }
-
-    const userBalance = this.balances.get(userId)!;
-    if (!userBalance[asset]) {
-      userBalance[asset] = {
-        available: 0,
-        locked: 0
-      };
-    }
-  }
-
-  /**
-   * Check if user has sufficient funds and lock them
-   */
-  checkAndLockFunds(
+  async checkAndLockFunds(
     baseAsset: string,
     quoteAsset: string,
     side: "buy" | "sell",
     userId: string,
     price: number,
-    quantity: number
+    quantity: number,
+    orderId: string
   ) {
-    const userBalance = this.balances.get(userId);
-    if (!userBalance) {
-      throw new Error("User balance not found");
-    }
-
     if (side === "buy") {
       // For buy orders, lock quote asset (e.g., USDC)
       const requiredAmount = quantity * price;
-      const quoteBalance = userBalance[quoteAsset];
 
-      if (!quoteBalance) {
-        throw new Error(`No ${quoteAsset} balance found`);
-      }
+      // Update Balance: available -= required, locked += required
+      const success = await RedisManager.getInstance().updateBalance(
+        userId,
+        quoteAsset,
+        -requiredAmount,
+        requiredAmount,
+        "order_place",
+        orderId
+      );
 
-      if (quoteBalance.available < requiredAmount) {
+      if (!success) {
         throw new Error(
-          `Insufficient ${quoteAsset} funds. Required: ${requiredAmount.toFixed(8)}, Available: ${quoteBalance.available.toFixed(8)}`
+          `Insufficient ${quoteAsset} funds. Required: ${requiredAmount.toFixed(8)}`
         );
       }
-
-      quoteBalance.available -= requiredAmount;
-      quoteBalance.locked += requiredAmount;
 
       console.log(`[Lock] User ${userId}: Locked ${requiredAmount} ${quoteAsset} for buy order`);
     } else {
       // For sell orders, lock base asset (e.g., BTC)
-      const baseBalance = userBalance[baseAsset];
+      // Update Balance: available -= quantity, locked += quantity
+      const success = await RedisManager.getInstance().updateBalance(
+        userId,
+        baseAsset,
+        -quantity,
+        quantity,
+        "order_place",
+        orderId
+      );
 
-      if (!baseBalance) {
-        throw new Error(`No ${baseAsset} balance found`);
-      }
-
-      if (baseBalance.available < quantity) {
+      if (!success) {
         throw new Error(
-          `Insufficient ${baseAsset} funds. Required: ${quantity.toFixed(8)}, Available: ${baseBalance.available.toFixed(8)}`
+          `Insufficient ${baseAsset} funds. Required: ${quantity.toFixed(8)}`
         );
       }
-
-      baseBalance.available -= quantity;
-      baseBalance.locked += quantity;
 
       console.log(`[Lock] User ${userId}: Locked ${quantity} ${baseAsset} for sell order`);
     }
@@ -606,106 +580,100 @@ export class Engine {
    * Update balances after order fills
    * Handles both taker and maker balance updates
    */
-  updateBalance(
+  async updateBalance(
     userId: string,
     baseAsset: string,
     quoteAsset: string,
     side: "buy" | "sell",
     fills: Fill[],
     executedQty: number,
-    orderPrice: number
+    orderPrice: number,
+    orderId: string
   ) {
-    const userBalance = this.balances.get(userId);
-    if (!userBalance) {
-      console.error(`[UpdateBalance] User balance not found for ${userId}`);
-      return;
-    }
-
     if (side === "buy") {
       // TAKER is BUYING
-      // - Taker locked quote asset at orderPrice
-      // - Taker receives base asset
-      // - Maker (seller) receives quote asset
-      // - Maker releases locked base asset
-
-      fills.forEach(fill => {
+      for (const fill of fills) {
         const fillPrice = Number(fill.price);
         const fillQty = fill.qty;
         const fillValue = fillQty * fillPrice;
-
-        // Ensure other user has balance entries
-        this.ensureUserBalance(fill.otherUserId, quoteAsset);
-        this.ensureUserBalance(fill.otherUserId, baseAsset);
-
-        const otherUserBalance = this.balances.get(fill.otherUserId)!;
 
         // === TAKER (buyer - userId) ===
-        // 1. Spend locked quote asset (at fill price, not order price)
-        userBalance[quoteAsset].locked -= fillValue;
-
+        // 1. Spend locked quote asset (at fill price)
         // 2. Receive base asset
-        userBalance[baseAsset].available += fillQty;
+        // 3. Price Improvement: Return difference (locked reduction, available increase)
 
-        // 3. Return price improvement (if filled at better price)
+        // Combined Taker Quote Change:
+        // Locked decreases by fillValue (spent) + improvement (returned) = locked decreases by orderPrice * fillQty
+        // Actually: Locked usage = fillValue. 
+        // Improvement = (orderPrice - fillPrice) * fillQty
+        // Locked reduced by fillValue + Improvement = (fillPrice * fillQty) + (orderPrice - fillPrice) * fillQty = orderPrice * fillQty
+        // Available increases by Improvement
+
         const priceDifference = orderPrice - fillPrice;
+        let takerQuoteAvailableChange = 0;
+        let takerQuoteLockedChange = -fillValue;
+
         if (priceDifference > 0) {
           const priceImprovement = priceDifference * fillQty;
-          userBalance[quoteAsset].locked -= priceImprovement;
-          userBalance[quoteAsset].available += priceImprovement;
-          console.log(`[PriceImprovement] User ${userId}: Returned ${priceImprovement} ${quoteAsset} (filled at ${fillPrice} vs order at ${orderPrice})`);
+          takerQuoteLockedChange -= priceImprovement;
+          takerQuoteAvailableChange += priceImprovement;
         }
 
-        // === MAKER (seller - otherUserId) ===
-        // 1. Receive quote asset
-        otherUserBalance[quoteAsset].available += fillValue;
+        // Taker Base Asset Change: +fillQty (available)
 
-        // 2. Release locked base asset
-        otherUserBalance[baseAsset].locked -= fillQty;
+        await RedisManager.getInstance().updateBalance(
+          userId, quoteAsset, takerQuoteAvailableChange, takerQuoteLockedChange, "trade", fill.tradeId.toString()
+        );
+        await RedisManager.getInstance().updateBalance(
+          userId, baseAsset, fillQty, 0, "trade", fill.tradeId.toString()
+        );
+
+        // === MAKER (seller - otherUserId) ===
+        // 1. Receive quote asset (+available)
+        // 2. Release locked base asset (-locked)
+
+        await RedisManager.getInstance().updateBalance(
+          fill.otherUserId, quoteAsset, fillValue, 0, "trade", fill.tradeId.toString()
+        );
+        await RedisManager.getInstance().updateBalance(
+          fill.otherUserId, baseAsset, 0, -fillQty, "trade", fill.tradeId.toString()
+        );
 
         console.log(`[Fill] BUY: Taker ${userId} bought ${fillQty} ${baseAsset} @ ${fillPrice} from Maker ${fill.otherUserId}`);
-      });
+      }
     } else {
       // TAKER is SELLING
-      // - Taker locked base asset
-      // - Taker receives quote asset
-      // - Maker (buyer) spends locked quote asset
-      // - Maker receives base asset
-
-      fills.forEach(fill => {
+      for (const fill of fills) {
         const fillPrice = Number(fill.price);
         const fillQty = fill.qty;
         const fillValue = fillQty * fillPrice;
 
-        // Ensure other user has balance entries
-        this.ensureUserBalance(fill.otherUserId, quoteAsset);
-        this.ensureUserBalance(fill.otherUserId, baseAsset);
-
-        const otherUserBalance = this.balances.get(fill.otherUserId)!;
-
         // === TAKER (seller - userId) ===
-        // 1. Release locked base asset
-        userBalance[baseAsset].locked -= fillQty;
+        // 1. Release locked base asset (-locked)
+        // 2. Receive quote asset (+available)
 
-        // 2. Receive quote asset
-        userBalance[quoteAsset].available += fillValue;
+        await RedisManager.getInstance().updateBalance(
+          userId, baseAsset, 0, -fillQty, "trade", fill.tradeId.toString()
+        );
+        await RedisManager.getInstance().updateBalance(
+          userId, quoteAsset, fillValue, 0, "trade", fill.tradeId.toString()
+        );
 
         // === MAKER (buyer - otherUserId) ===
-        // The maker locked quote asset at THEIR order price (which is the fill price)
-        // 1. Spend locked quote asset
-        otherUserBalance[quoteAsset].locked -= fillValue;
+        // Maker locked quote asset at THEIR order price (which is fillPrice)
+        // 1. Spend locked quote asset (-locked)
+        // 2. Receive base asset (+available)
 
-        // 2. Receive base asset
-        otherUserBalance[baseAsset].available += fillQty;
+        await RedisManager.getInstance().updateBalance(
+          fill.otherUserId, quoteAsset, 0, -fillValue, "trade", fill.tradeId.toString()
+        );
+        await RedisManager.getInstance().updateBalance(
+          fill.otherUserId, baseAsset, fillQty, 0, "trade", fill.tradeId.toString()
+        );
 
         console.log(`[Fill] SELL: Taker ${userId} sold ${fillQty} ${baseAsset} @ ${fillPrice} to Maker ${fill.otherUserId}`);
-      });
+      }
     }
-
-    // Log final balances for debugging
-    console.log(`[Balance] User ${userId} after fills:`, {
-      [baseAsset]: userBalance[baseAsset],
-      [quoteAsset]: userBalance[quoteAsset]
-    });
   }
 
   updateDbOrders(order: Order, executedQty: number, fills: Fill[], market: string) {
@@ -836,53 +804,6 @@ export class Engine {
         }
       });
     }
-  }
 
-  onRamp(userId: string, amount: number, asset: string = BASE_CURRENCY) {
-    if (isNaN(amount) || amount <= 0) {
-      console.error(`[OnRamp] Invalid amount: ${amount}`);
-      return;
-    }
-
-    this.ensureUserBalance(userId, asset);
-    const userBalance = this.balances.get(userId)!;
-    userBalance[asset].available += amount;
-
-    console.log(`[OnRamp] User ${userId}: Added ${amount} ${asset}. New available: ${userBalance[asset].available}`);
-  }
-
-  setBaseBalances() {
-    const allAssets = new Set<string>();
-    allAssets.add(BASE_CURRENCY);
-
-    this.supportedMarkets.forEach(config => {
-      allAssets.add(config.baseAsset);
-      allAssets.add(config.quoteAsset);
-    });
-  }
-
-  /**
-   * Get user balance for a specific asset or all assets
-   */
-  getUserBalance(userId: string, asset?: string): UserBalance | { available: number; locked: number } | null {
-    const userBalance = this.balances.get(userId);
-    if (!userBalance) return null;
-
-    if (asset) {
-      return userBalance[asset] || { available: 0, locked: 0 };
-    }
-
-    return userBalance;
-  }
-
-  /**
-   * Debug method to print all balances
-   */
-  printBalances() {
-    console.log("=== Current Balances ===");
-    this.balances.forEach((balance, userId) => {
-      console.log(`User ${userId}:`, balance);
-    });
-    console.log("========================");
   }
 }

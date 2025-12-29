@@ -28,7 +28,8 @@ export type MessageToApi = {
     payload: {
         orderId: string,
         executedQty: number,
-        remainingQty: number
+        remainingQty: number,
+        error?: string
     }
 } | {
     type: "OPEN_ORDERS",

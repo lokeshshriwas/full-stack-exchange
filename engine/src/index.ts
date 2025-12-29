@@ -14,7 +14,7 @@ async function main() {
         if (!response) {
 
         } else {
-            engine.process(JSON.parse(response));
+            await engine.process(JSON.parse(response));
         }
     }
 
