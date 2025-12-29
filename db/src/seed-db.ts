@@ -13,6 +13,7 @@ async function initializeDB() {
 
   await client.query(`
     -- Drop tables in dependency order
+    DROP TABLE IF EXISTS balance_ledger;
     DROP TABLE IF EXISTS spot_positions;
     DROP TABLE IF EXISTS balances;
     DROP TABLE IF EXISTS markets;
@@ -48,22 +49,36 @@ async function initializeDB() {
     );
 
     -- USER BALANCES (HOLDINGS)
+    -- Modified to match Engine's string IDs and Asset Symbols
     CREATE TABLE balances (
-      user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      user_id VARCHAR(50) NOT NULL,
       asset_id INT NOT NULL REFERENCES assets(id),
       available NUMERIC(36,18) DEFAULT 0,
       locked NUMERIC(36,18) DEFAULT 0,
+      last_updated_at TIMESTAMP DEFAULT NOW(),
       PRIMARY KEY (user_id, asset_id)
+    );
+
+    -- BALANCE LEDGER (History)
+    CREATE TABLE balance_ledger (
+      id SERIAL PRIMARY KEY,
+      user_id VARCHAR(50) NOT NULL,
+      asset VARCHAR(20) NOT NULL,
+      amount_change NUMERIC(36,18) NOT NULL,
+      locked_change NUMERIC(36,18) NOT NULL,
+      type VARCHAR(20) NOT NULL, -- 'trade', 'order_place', 'cancel', 'deposit'
+      event_id VARCHAR(100), -- orderId or tradeId
+      timestamp TIMESTAMP DEFAULT NOW()
     );
 
     -- USER SPOT POSITIONS (MARKET-WISE)
     CREATE TABLE spot_positions (
-      user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      market_id INT NOT NULL REFERENCES markets(id),
+      user_id VARCHAR(50) NOT NULL,
+      market VARCHAR(20) NOT NULL, -- Changed from market_id to match Engine
       base_quantity NUMERIC(36,18) DEFAULT 0,
       avg_buy_price NUMERIC(36,18),
       updated_at TIMESTAMP DEFAULT NOW(),
-      PRIMARY KEY (user_id, market_id)
+      PRIMARY KEY (user_id, market)
     );
 
     -- TRADES HISTORY
