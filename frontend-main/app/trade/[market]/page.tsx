@@ -3,6 +3,7 @@ import { MarketBar } from "@/app/components/MarketBar";
 import { SwapUI } from "@/app/components/SwapUI";
 import { TradeView } from "@/app/components/TradeView";
 import { Depth } from "@/app/components/depth/Depth";
+import { Positions } from "@/app/components/Positions";
 import { SignalingManager } from "@/app/utils/SignalingManager";
 import { getTicker } from "@/app/utils/httpClient";
 import { Ticker } from "@/app/utils/types";
@@ -62,6 +63,9 @@ export default function Page() {
           <div className="flex flex-col w-[250px] overflow-hidden">
             <Depth market={market as string} />
           </div>
+        </div>
+        <div className="w-full p-2">
+          <Positions market={market as string} />
         </div>
       </div>
       <div className="w-px flex-col border-slate-800 border-l"></div>

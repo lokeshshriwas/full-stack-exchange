@@ -8,6 +8,7 @@ import { tradesRouter } from "./routes/trades";
 import { orderRouter } from "./routes/order";
 import { balanceRouter } from "./routes/balances";
 import { assetsRouter } from "./routes/assets";
+import { positionsRouter } from "./routes/positions";
 import cors from "cors";
 import { userRouter } from "./routes/user";
 import cookieParser from "cookie-parser";
@@ -37,6 +38,7 @@ app.use("/api/v2/order", orderRouter);
 app.use("/api/v2/auth", userRouter);
 app.use("/api/v2/balances", balanceRouter);
 app.use("/api/v2/assets", assetsRouter);
+app.use("/api/v2/positions", positionsRouter);
 
 app.use(
   "/",

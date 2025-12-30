@@ -48,7 +48,7 @@ type DbMessage = {
 }
 
 export class RedisManager {
-    private client: RedisClientType;
+    public client: RedisClientType;
     private static instance: RedisManager;
 
     constructor() {

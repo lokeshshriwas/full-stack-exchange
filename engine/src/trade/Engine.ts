@@ -5,6 +5,7 @@ import { CANCEL_ORDER, CREATE_ORDER, GET_DEPTH, GET_OPEN_ORDERS, MessageFromApi,
 import { Fill, Order, Orderbook } from "./Orderbook";
 import axios from "axios";
 import { Ticker } from "../types/toApi";
+import { PositionManager } from "./PositionManager";
 
 export const BASE_CURRENCY = "USDC";
 
@@ -19,6 +20,7 @@ interface MarketConfig {
 export class Engine {
   private orderbooks: Orderbook[] = [];
   private supportedMarkets: Map<string, MarketConfig> = new Map();
+  private positionManager: PositionManager = new PositionManager();
   static initializeMarkets: boolean = false;
 
   constructor() {
@@ -146,6 +148,15 @@ export class Engine {
     setInterval(() => {
       this.saveSnapshot();
     }, 1000 * 3);
+
+    setInterval(async () => {
+      // Update PnL for all markets
+      for (const orderbook of this.orderbooks) {
+        if (orderbook.currentPrice > 0) {
+          await this.positionManager.updateUnrealizedPnL(orderbook.ticker(), orderbook.currentPrice);
+        }
+      }
+    }, 1000 * 1); // Every 1 second
   }
 
   private async initializeSupportedMarkets() {
@@ -517,6 +528,25 @@ export class Engine {
     this.updateDbOrders(order, executedQty, fills, market);
     this.publishWsDepthUpdates(fills, price, side, market);
     this.publishWsTrades(fills, userId, market);
+
+    // Update Positions (Async to not block too much, or await if strict)
+    // Taker Side (the user placing the order)
+    this.positionManager.updatePosition({
+      price: order.price.toString(),
+      qty: executedQty,
+      tradeId: 0, // Not needed for position accumulation logic usually, or generate one
+      otherUserId: userId, // Taker ID
+      markerOrderId: order.orderId
+    }, side, market);
+
+    // Maker Side (for each fill)
+    fills.forEach(fill => {
+      // MATCHED AGAINST:
+      // If Taker is BUY -> Maker was SELL -> Maker Side is SELL
+      // If Taker is SELL -> Maker was BUY -> Maker Side is BUY
+      const makerSide = side === "buy" ? "sell" : "buy";
+      this.positionManager.updatePosition(fill, makerSide, market);
+    });
 
     return { executedQty, fills, orderId: order.orderId };
   }

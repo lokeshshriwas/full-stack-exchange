@@ -127,6 +127,7 @@ export class Orderbook {
                 if (this.trades.length > 50) {
                     this.trades.shift();
                 }
+                this.currentPrice = Number(fill.price);
             }
         }
         for (let i = 0; i < this.asks.length; i++) {
@@ -174,6 +175,7 @@ export class Orderbook {
                 if (this.trades.length > 50) {
                     this.trades.shift();
                 }
+                this.currentPrice = Number(fill.price);
             }
         }
         for (let i = 0; i < this.bids.length; i++) {
