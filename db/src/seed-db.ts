@@ -117,34 +117,6 @@ async function initializeDB() {
       updated_at TIMESTAMP DEFAULT NOW()
     );
 
-    -- OPEN POSITIONS (Live)
-    CREATE TABLE open_positions (
-      user_id VARCHAR(50) NOT NULL,
-      market VARCHAR(20) NOT NULL,
-      side VARCHAR(10) NOT NULL,
-      entry_price NUMERIC(36,18) NOT NULL,
-      quantity NUMERIC(36,18) NOT NULL,
-      unrealized_pnl NUMERIC(36,18) DEFAULT 0,
-      unrealized_pnl_percent NUMERIC(36,18) DEFAULT 0,
-      created_at TIMESTAMP DEFAULT NOW(),
-      updated_at TIMESTAMP DEFAULT NOW(),
-      PRIMARY KEY (user_id, market)
-    );
-
-    -- POSITION HISTORY (Closed)
-    CREATE TABLE position_history (
-      id SERIAL PRIMARY KEY,
-      user_id VARCHAR(50) NOT NULL,
-      market VARCHAR(20) NOT NULL,
-      side VARCHAR(10) NOT NULL,
-      entry_price NUMERIC(36,18) NOT NULL,
-      close_price NUMERIC(36,18) NOT NULL,
-      quantity NUMERIC(36,18) NOT NULL,
-      realized_pnl NUMERIC(36,18) NOT NULL,
-      opened_at TIMESTAMP NOT NULL,
-      closed_at TIMESTAMP DEFAULT NOW()
-    );
-
     -- ORDERBOOK SNAPSHOTS
     CREATE TABLE orderbook_snapshots (
       market VARCHAR(20) PRIMARY KEY,

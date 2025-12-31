@@ -147,62 +147,6 @@ async function processTrades() {
         await pgClient.query(query, values);
         console.log(`✔ Saved snapshot for ${data.data.market}`);
       }
-
-      if (data.type === "POSITION_UPDATED") {
-        const query = `
-              INSERT INTO open_positions (user_id, market, side, entry_price, quantity, unrealized_pnl, created_at, updated_at)
-              VALUES ($1, $2, $3, $4, $5, $6, to_timestamp($7/1000.0), NOW())
-              ON CONFLICT (user_id, market) DO UPDATE SET
-                  side = $3,
-                  entry_price = $4,
-                  quantity = $5,
-                  unrealized_pnl = $6,
-                  updated_at = NOW()
-          `;
-        const values = [
-          data.data.userId,
-          data.data.market,
-          data.data.side,
-          data.data.entryPrice,
-          data.data.quantity,
-          data.data.unrealizedPnL,
-          data.data.created_at
-        ];
-        await pgClient.query(query, values);
-        // console.log(`✔ Updated position for ${data.data.userId} on ${data.data.market}`);
-      }
-
-      if (data.type === "POSITION_HISTORY") {
-        const query = `
-              INSERT INTO position_history (user_id, market, side, entry_price, close_price, quantity, realized_pnl, opened_at)
-              VALUES ($1, $2, $3, $4, $5, $6, $7, to_timestamp($8/1000.0))
-          `;
-        const values = [
-          data.data.userId,
-          data.data.market,
-          data.data.side,
-          data.data.entryPrice,
-          data.data.closePrice,
-          data.data.quantity,
-          data.data.realizedPnL,
-          data.data.openedAt
-        ];
-        await pgClient.query(query, values);
-        console.log(`✔ Saved position history for ${data.data.userId} on ${data.data.market}`);
-      }
-
-      if (data.type === "POSITION_CLOSED") {
-        const query = `
-              DELETE FROM open_positions
-              WHERE user_id = $1 AND market = $2
-          `;
-        const values = [
-          data.data.userId,
-          data.data.market
-        ];
-        await pgClient.query(query, values);
-        console.log(`✔ Closed position (removed) for ${data.data.userId} on ${data.data.market}`);
-      }
     } catch (e) {
       console.error("Error processing db message", e);
     }

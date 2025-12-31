@@ -39,33 +39,4 @@ export type DbMessage = {
         quantity?: string,
         side?: "buy" | "sell",
     }
-} | {
-    type: "POSITION_UPDATED",
-    data: {
-        userId: string,
-        market: string,
-        side: "long" | "short",
-        entryPrice: number,
-        quantity: number,
-        unrealizedPnL: number,
-        created_at: number
-    }
-} | {
-    type: "POSITION_HISTORY",
-    data: {
-        userId: string,
-        market: string,
-        side: "long" | "short",
-        entryPrice: number,
-        closePrice: number,
-        quantity: number,
-        realizedPnL: number,
-        openedAt: number
-    }
-} | {
-    type: "POSITION_CLOSED",
-    data: {
-        userId: string,
-        market: string
-    }
 }
