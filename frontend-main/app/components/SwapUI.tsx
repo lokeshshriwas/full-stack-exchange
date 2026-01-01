@@ -5,6 +5,7 @@ import { makeOrder } from "../helper/fetch";
 import { trimString } from "../utils/helper";
 import { useUser } from "../hooks/useUser";
 import { useRouter } from "next/navigation";
+import { useBalance } from "../hooks/useBalance";
 
 export function SwapUI({
   market,
@@ -21,6 +22,12 @@ export function SwapUI({
   const [type, setType] = useState("market");
   const router = useRouter();
   const { user, loading } = useUser();
+  const {
+    getFormattedBalance,
+    baseAsset,
+    quoteAsset,
+    loading: balanceLoading,
+  } = useBalance(user, market);
 
   const numAmount = Number(amount);
   const numQty = Number(qty);
@@ -47,9 +54,20 @@ export function SwapUI({
                   <p className="text-xs font-normal text-base-text-med-emphasis">
                     Available Balance
                   </p>
-                  <p className="font-medium text-xs text-base-text-high-emphasis">
-                    36.94 USDC
-                  </p>
+                  <div className="flex flex-col items-end gap-1">
+                    <p className="font-medium text-xs text-base-text-high-emphasis">
+                      {balanceLoading
+                        ? "Loading..."
+                        : `${getFormattedBalance(quoteAsset)} ${quoteAsset}`}
+                    </p>
+                    {activeTab === "sell" && (
+                      <p className="font-medium text-xs text-base-text-med-emphasis">
+                        {balanceLoading
+                          ? "..."
+                          : `${getFormattedBalance(baseAsset)} ${baseAsset}`}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 

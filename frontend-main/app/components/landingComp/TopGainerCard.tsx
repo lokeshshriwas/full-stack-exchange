@@ -5,6 +5,7 @@ const Row = ({ tableData }: { tableData: any }) => {
     <a
       className="flex px-4 py-2 hover:bg-white/4"
       href={`/trade/${item.symbol}`}
+      key={item.symbol}
     >
       <span className="w-[40%]">
         <div className="flex items-center flex-row min-w-max gap-2 w-full">

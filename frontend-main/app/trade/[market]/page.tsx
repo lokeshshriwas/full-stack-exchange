@@ -4,6 +4,7 @@ import { SwapUI } from "@/app/components/SwapUI";
 import { TradeView } from "@/app/components/TradeView";
 import { Depth } from "@/app/components/depth/Depth";
 import { SignalingManager } from "@/app/utils/SignalingManager";
+import { Orders } from "@/app/components/Orders";
 import { getTicker } from "@/app/utils/httpClient";
 import { Ticker } from "@/app/utils/types";
 import { useParams } from "next/navigation";
@@ -12,6 +13,7 @@ import { useEffect, useState } from "react";
 export default function Page() {
   const { market } = useParams();
   const [ticker, setTicker] = useState<Ticker | null>(null);
+  const [orders, setOrders] = useState<any>(null);
 
   useEffect(() => {
     getTicker(market as string).then(setTicker);
@@ -62,6 +64,9 @@ export default function Page() {
           <div className="flex flex-col w-[250px] overflow-hidden">
             <Depth market={market as string} />
           </div>
+        </div>
+        <div className="w-full mt-4">
+          <Orders market={market as string} />
         </div>
       </div>
       <div className="w-px flex-col border-slate-800 border-l"></div>

@@ -27,8 +27,8 @@ export class SubscriptionManager {
     return this.instance;
   }
 
-  public async subscribe(userId: string, subscription: string) {
-    console.log(`[WS] User ${userId} subscribing to ${subscription}`);
+  public async subscribe(userId: string, subscription: string, authenticatedUserId: string | null = null) {
+    console.log(`[WS] User ${userId} (authenticated as ${authenticatedUserId || 'anonymous'}) subscribing to ${subscription}`);
     if (this.subscriptions.get(userId)?.includes(subscription)) {
       return;
     }
@@ -85,6 +85,13 @@ export class SubscriptionManager {
           }
         } as any);
       }
+    }
+
+    // Handle open_orders subscription - no snapshot needed initially
+    // Orders will stream as they are created/updated/cancelled
+    if (subscription.startsWith("open_orders:user:")) {
+      console.log(`[WS] User ${authenticatedUserId} subscribed to open orders stream`);
+      // Future: could send current open orders snapshot here if needed
     }
   }
 

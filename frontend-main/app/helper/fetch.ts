@@ -18,3 +18,7 @@ export const cancelOrder = async (orderId: string, market: string, userId: strin
         market,
     },
 });
+
+export const getBalances = async (userId: string) => await axios.get(`${BASE_URL}/api/v2/balances/${userId}`, {
+    withCredentials: true
+});

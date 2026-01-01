@@ -39,4 +39,12 @@ export type DbMessage = {
         quantity?: string,
         side?: "buy" | "sell",
     }
+} | {
+    type: "ORDER_CANCELLED",
+    data: {
+        orderId: string,
+        executedQty: number,
+        market: string,
+        remainingQty: number
+    }
 }

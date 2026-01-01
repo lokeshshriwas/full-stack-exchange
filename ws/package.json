@@ -12,8 +12,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/dotenv": "^6.1.1",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/redis": "^4.0.11",
     "@types/ws": "^8.5.10",
+    "dotenv": "^17.2.3",
+    "jsonwebtoken": "^9.0.3",
     "redis": "^4.6.14",
     "ws": "^8.17.1"
   }

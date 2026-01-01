@@ -7,11 +7,11 @@ export class UserManager {
     private users: Map<string, User> = new Map();
 
     private constructor() {
-        
+
     }
 
     public static getInstance() {
-        if (!this.instance)  {
+        if (!this.instance) {
             this.instance = new UserManager();
         }
         return this.instance;
@@ -21,14 +21,16 @@ export class UserManager {
         const id = this.getRandomId();
         const user = new User(id, ws);
         this.users.set(id, user);
-        this.registerOnClose(ws, id);
+        this.registerOnClose(ws, user);
         return user;
     }
 
-    private registerOnClose(ws: WebSocket, id: string) {
+    private registerOnClose(ws: WebSocket, user: User) {
         ws.on("close", () => {
-            this.users.delete(id);
-            SubscriptionManager.getInstance().userLeft(id);
+            const userId = user.getId();
+            console.log(`User ${userId} disconnected`);
+            this.users.delete(userId);
+            SubscriptionManager.getInstance().userLeft(userId);
         });
     }
 

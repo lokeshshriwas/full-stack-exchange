@@ -13,7 +13,10 @@ type DbMessage = {
         quantity: string,
         quoteQuantity: string,
         timestamp: number,
-        market: string
+        market: string,
+        userId: string,
+        status: "filled" | "partial" | "open",
+        orderId: string
     }
 } | {
     type: "ORDER_PLACED",
@@ -24,7 +27,9 @@ type DbMessage = {
         price: string,
         quantity: string,
         side: "buy" | "sell",
-        userId: string
+        userId: string,
+        status: "open" | "filled" | "partial",
+        timestamp: number
     }
 } | {
     type: "SNAPSHOT_SAVED",
@@ -44,6 +49,14 @@ type DbMessage = {
         quantity?: string,
         side?: "buy" | "sell",
         userId?: string
+    }
+} | {
+    type: "ORDER_CANCELLED",
+    data: {
+        orderId: string,
+        executedQty: number,
+        market: string,
+        remainingQty: number
     }
 }
 

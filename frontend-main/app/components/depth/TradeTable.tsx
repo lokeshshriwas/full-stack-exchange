@@ -1,5 +1,4 @@
 import { Tradetype } from "@/app/utils/types";
-import { timeStamp } from "console";
 import React from "react";
 
 type TradeTableHeaderProps = {
@@ -19,7 +18,7 @@ export const TradeTableHeader: React.FC<TradeTableHeaderProps> = ({
 
 type TradeTableProps = {
   market: string;
-  trades: [];
+  trades: Tradetype[];
 };
 
 export const TradeTable: React.FC<TradeTableProps> = ({
@@ -35,7 +34,7 @@ export const TradeTable: React.FC<TradeTableProps> = ({
       <div className="flex flex-col overflow-y-auto h-[500px] border border-gray-700 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {trades.map((trade) => (
           <TradeTableRow
-            key={trade.id}
+            key={Math.random()}
             price={trade.price}
             quantity={Number(trade.quantity).toFixed(3)}
             timestamp={trade.timestamp}

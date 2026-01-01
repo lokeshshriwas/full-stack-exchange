@@ -3,6 +3,26 @@ import { Ticker } from "./types";
 export const PROXY_URL = "wss://ws.backpack.exchange/";
 export const BASE_URL = "ws://localhost:3001";
 
+// Helper to get cookie value
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+
+  console.log('[getCookie] All cookies:', document.cookie);
+  console.log('[getCookie] Looking for:', name);
+
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+
+  if (parts.length === 2) {
+    const cookieValue = parts.pop()?.split(';').shift() || null;
+    console.log('[getCookie] Found cookie:', name, '=', cookieValue);
+    return cookieValue;
+  }
+
+  console.log('[getCookie] Cookie not found:', name);
+  return null;
+}
+
 export class SignalingManager {
   private proxyWs: WebSocket;
   private ws: WebSocket;
@@ -13,6 +33,8 @@ export class SignalingManager {
   private id: number;
   private initializedBase: boolean = false;
   private initializedProxy: boolean = false;
+  private authenticated: boolean = false;
+  private authenticatedUserId: string | null = null;
 
   private constructor() {
     this.proxyWs = new WebSocket(PROXY_URL);
@@ -28,6 +50,39 @@ export class SignalingManager {
       this.instance = new SignalingManager();
     }
     return this.instance;
+  }
+
+  // Public method to check if authenticated
+  public isAuthenticated(): boolean {
+    return this.authenticated;
+  }
+
+  public getAuthenticatedUserId(): string | null {
+    return this.authenticatedUserId;
+  }
+
+  // Authenticate with JWT from localStorage (cross-domain workaround)
+  public authenticate() {
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+
+    if (!accessToken) {
+      console.warn('[SignalingManager] No accessToken in localStorage, skipping authentication');
+      return;
+    }
+
+    console.log('[SignalingManager] Authenticating with JWT from localStorage');
+
+    const authMessage = {
+      method: 'AUTH',
+      params: [accessToken]
+    };
+
+    if (!this.initializedBase) {
+      this.baseBufferedMessages.push(authMessage);
+      return;
+    }
+
+    this.ws.send(JSON.stringify(authMessage));
   }
 
   init() {
@@ -83,16 +138,51 @@ export class SignalingManager {
     };
 
     this.ws.onopen = () => {
+      console.log('[SignalingManager] WebSocket connected to', BASE_URL);
       this.initializedBase = true;
+
+      // Send buffered messages
       this.baseBufferedMessages.forEach((message) => {
         this.ws.send(JSON.stringify(message));
       });
       this.baseBufferedMessages = [];
+
+      // Auto-authenticate if we have a token
+      this.authenticate();
     };
 
     this.ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      const type = message.data.e;
+      console.log("raw websocket message", message);
+
+      // Handle authentication response
+      if (message.type === 'auth_success') {
+        this.authenticated = true;
+        this.authenticatedUserId = message.userId;
+        console.log('[SignalingManager] Authentication successful, userId:', this.authenticatedUserId);
+
+        // Trigger auth callback if registered
+        if (this.callbacks['auth_success']) {
+          this.callbacks['auth_success'].forEach(({ callback }: any) => {
+            callback(message);
+          });
+        }
+        return;
+      }
+
+      // Handle error messages
+      if (message.type === 'error') {
+        console.error('[SignalingManager] WebSocket error:', message.message);
+        if (this.callbacks['error']) {
+          this.callbacks['error'].forEach(({ callback }: any) => {
+            callback(message);
+          });
+        }
+        return;
+      }
+
+      const type = message.data?.e || message.data?.type;
+
       if (this.callbacks[type]) {
         this.callbacks[type].forEach(({ callback }: any) => {
           if (type === "depth") {
@@ -124,6 +214,10 @@ export class SignalingManager {
               callback(newTrade);
             }
           }
+          // Handle open orders messages
+          if (type === "ORDER_PLACED" || type === "ORDER_CANCELLED") {
+            callback(message.data);
+          }
         });
       }
     };
@@ -135,6 +229,8 @@ export class SignalingManager {
     this.ws.onclose = () => {
       console.log("Base WebSocket closed");
       this.initializedBase = false;
+      this.authenticated = false;
+      this.authenticatedUserId = null;
     };
   }
 

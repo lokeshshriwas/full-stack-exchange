@@ -68,15 +68,35 @@ orderRouter.delete("/", async (req, res) => {
   res.json(response.payload);
 });
 
-orderRouter.get("/open", async (req, res) => {
+orderRouter.get("/open", authMiddleware, async (req: AuthRequest, res) => {
   const response = await RedisManager.getInstance().sendAndAwait({
     type: GET_OPEN_ORDERS,
     data: {
-      userId: req.query.userId as string,
+      userId: req.userId!,
       market: req.query.market as string,
     },
   });
   res.json(response.payload);
+});
+
+orderRouter.get("/history", authMiddleware, async (req: AuthRequest, res) => {
+  const userId = req.userId;
+  const response = await pool.query(`
+        SELECT * FROM orders 
+        WHERE user_id = $1 AND status = 'filled'
+        ORDER BY created_at DESC
+    `, [userId]);
+
+  res.json(response.rows.map(o => ({
+    orderId: o.id,
+    market: o.symbol,
+    price: o.price,
+    quantity: o.qty,
+    filled: o.filled,
+    side: o.side,
+    status: o.status,
+    timestamp: o.created_at
+  })));
 });
 
 orderRouter.get("/", async (req, res) => {

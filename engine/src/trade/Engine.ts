@@ -1,6 +1,7 @@
 import fs from "fs";
 import { RedisManager } from "../RedisManager";
 import { ORDER_UPDATE, TRADE_ADDED } from "../types/index";
+import { OrderPlacedMessage } from "../types/toWs";
 import { CANCEL_ORDER, CREATE_ORDER, GET_DEPTH, GET_OPEN_ORDERS, MessageFromApi, ON_RAMP, ENSURE_USER } from "../types/fromApi";
 import { Fill, Order, Orderbook } from "./Orderbook";
 import axios from "axios";
@@ -270,6 +271,9 @@ export class Engine {
             }
           });
 
+          // This is now handled by publishWsOrders() method which publishes to open_orders:user channel
+          // No need to duplicate here
+
           RedisManager.getInstance().pushMessage({
             type: "ORDER_PLACED",
             data: {
@@ -279,7 +283,9 @@ export class Engine {
               price: message.data.price,
               quantity: message.data.quantity,
               side: message.data.side,
-              userId: message.data.userId
+              userId: message.data.userId,
+              status: "open" as const,
+              timestamp: Date.now()
             }
           });
         } catch (e: any) {
@@ -295,6 +301,8 @@ export class Engine {
           });
         }
         break;
+
+
 
       case CANCEL_ORDER:
         try {
@@ -357,12 +365,44 @@ export class Engine {
             }
           }
 
+          const remainingQty = order.quantity - order.filled;
+
           RedisManager.getInstance().sendToApi(clientId, {
             type: "ORDER_CANCELLED",
             payload: {
               orderId,
               executedQty: order.filled,
-              remainingQty: order.quantity - order.filled
+              remainingQty
+            }
+          });
+
+          // Publish private update  to open_orders:user channel
+          RedisManager.getInstance().publishMessage(`open_orders:user:${order.userId}`, {
+            stream: `open_orders:user:${order.userId}`,
+            data: {
+              type: "ORDER_CANCELLED",
+              payload: {
+                orderId,
+                market: cancelMarket,
+                price: order.price.toString(),
+                quantity: order.quantity.toString(), // Original qty
+                filled: order.filled,
+                side: order.side,
+                remainingQty,
+                timestamp: Date.now()
+              }
+            }
+          });
+          console.log(`[Engine] Published ORDER_CANCELLED for order ${orderId} to open_orders:user:${order.userId}`);
+
+          // Push to DB processor
+          RedisManager.getInstance().pushMessage({
+            type: "ORDER_CANCELLED",
+            data: {
+              orderId,
+              executedQty: order.filled,
+              market: cancelMarket,
+              remainingQty
             }
           });
 
@@ -513,10 +553,11 @@ export class Engine {
     // Update balances based on fills - pass orderPrice for price improvement calculation
     await this.updateBalance(userId, baseAsset, quoteAsset, side, fills, executedQty, numericPrice, orderId);
 
-    this.createDbTrades(fills, market, userId);
+    this.createDbTrades(fills, market, userId, orderId);
     this.updateDbOrders(order, executedQty, fills, market);
     this.publishWsDepthUpdates(fills, price, side, market);
     this.publishWsTrades(fills, userId, market);
+    this.publishWsOrders(order, executedQty, fills, market);
 
     return { executedQty, fills, orderId: order.orderId };
   }
@@ -598,17 +639,6 @@ export class Engine {
         const fillValue = fillQty * fillPrice;
 
         // === TAKER (buyer - userId) ===
-        // 1. Spend locked quote asset (at fill price)
-        // 2. Receive base asset
-        // 3. Price Improvement: Return difference (locked reduction, available increase)
-
-        // Combined Taker Quote Change:
-        // Locked decreases by fillValue (spent) + improvement (returned) = locked decreases by orderPrice * fillQty
-        // Actually: Locked usage = fillValue. 
-        // Improvement = (orderPrice - fillPrice) * fillQty
-        // Locked reduced by fillValue + Improvement = (fillPrice * fillQty) + (orderPrice - fillPrice) * fillQty = orderPrice * fillQty
-        // Available increases by Improvement
-
         const priceDifference = orderPrice - fillPrice;
         let takerQuoteAvailableChange = 0;
         let takerQuoteLockedChange = -fillValue;
@@ -619,8 +649,6 @@ export class Engine {
           takerQuoteAvailableChange += priceImprovement;
         }
 
-        // Taker Base Asset Change: +fillQty (available)
-
         await RedisManager.getInstance().updateBalance(
           userId, quoteAsset, takerQuoteAvailableChange, takerQuoteLockedChange, "trade", fill.tradeId.toString()
         );
@@ -628,16 +656,19 @@ export class Engine {
           userId, baseAsset, fillQty, 0, "trade", fill.tradeId.toString()
         );
 
-        // === MAKER (seller - otherUserId) ===
-        // 1. Receive quote asset (+available)
-        // 2. Release locked base asset (-locked)
+        // Order updates for partial fills are handled by publishWsOrders()
+        // No need to publish ORDER_UPDATE separately here
 
+        // === MAKER (seller - otherUserId) ===
         await RedisManager.getInstance().updateBalance(
           fill.otherUserId, quoteAsset, fillValue, 0, "trade", fill.tradeId.toString()
         );
         await RedisManager.getInstance().updateBalance(
           fill.otherUserId, baseAsset, 0, -fillQty, "trade", fill.tradeId.toString()
         );
+
+        // Order updates for partial fills are handled by publishWsOrders()
+        // No need to publish ORDER_UPDATE separately here
 
         console.log(`[Fill] BUY: Taker ${userId} bought ${fillQty} ${baseAsset} @ ${fillPrice} from Maker ${fill.otherUserId}`);
       }
@@ -649,9 +680,6 @@ export class Engine {
         const fillValue = fillQty * fillPrice;
 
         // === TAKER (seller - userId) ===
-        // 1. Release locked base asset (-locked)
-        // 2. Receive quote asset (+available)
-
         await RedisManager.getInstance().updateBalance(
           userId, baseAsset, 0, -fillQty, "trade", fill.tradeId.toString()
         );
@@ -659,17 +687,19 @@ export class Engine {
           userId, quoteAsset, fillValue, 0, "trade", fill.tradeId.toString()
         );
 
-        // === MAKER (buyer - otherUserId) ===
-        // Maker locked quote asset at THEIR order price (which is fillPrice)
-        // 1. Spend locked quote asset (-locked)
-        // 2. Receive base asset (+available)
+        // Order updates for partial fills are handled by publishWsOrders()
+        // No need to publish ORDER_UPDATE separately here
 
+        // === MAKER (buyer - otherUserId) ===
         await RedisManager.getInstance().updateBalance(
           fill.otherUserId, quoteAsset, 0, -fillValue, "trade", fill.tradeId.toString()
         );
         await RedisManager.getInstance().updateBalance(
           fill.otherUserId, baseAsset, fillQty, 0, "trade", fill.tradeId.toString()
         );
+
+        // Order updates for partial fills are handled by publishWsOrders()
+        // No need to publish ORDER_UPDATE separately here
 
         console.log(`[Fill] SELL: Taker ${userId} sold ${fillQty} ${baseAsset} @ ${fillPrice} to Maker ${fill.otherUserId}`);
       }
@@ -700,7 +730,7 @@ export class Engine {
     });
   }
 
-  createDbTrades(fills: Fill[], market: string, userId: string) {
+  createDbTrades(fills: Fill[], market: string, userId: string, orderId: string) {
     fills.forEach(fill => {
       RedisManager.getInstance().pushMessage({
         type: TRADE_ADDED,
@@ -711,7 +741,10 @@ export class Engine {
           price: fill.price,
           quantity: fill.qty.toString(),
           quoteQuantity: (fill.qty * Number(fill.price)).toString(),
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          userId: userId,
+          status: "filled",
+          orderId: orderId
         }
       });
     });
@@ -739,6 +772,36 @@ export class Engine {
       RedisManager.getInstance().pushToQueue(`trades_snapshot:${market}`, JSON.stringify(tradeData));
       RedisManager.getInstance().trimQueue(`trades_snapshot:${market}`, 100);
     });
+  }
+
+  publishWsOrders(order: Order, executedQty: number, fills: Fill[], market: string) {
+    let status: "filled" | "partial" | "open" = "open";
+    if (executedQty === order.quantity) {
+      status = "filled";
+    } else if (executedQty > 0) {
+      status = "partial";
+    }
+
+    const orderData: OrderPlacedMessage = {
+      stream: `open_orders:user:${order.userId}`,
+      data: {
+        type: "ORDER_PLACED",
+        payload: {
+          orderId: order.orderId,
+          executedQty: executedQty,
+          market: market,
+          price: order.price.toString(),
+          quantity: order.quantity.toString(),
+          side: order.side,
+          status: status,
+          userId: order.userId,
+          timestamp: Date.now()
+        }
+      }
+    };
+
+    RedisManager.getInstance().publishMessage(`open_orders:user:${order.userId}`, orderData);
+    console.log(`[Engine] Published order ${order.orderId} to open_orders:user:${order.userId}`);
   }
 
   sendUpdatedDepthAt(price: string, market: string) {

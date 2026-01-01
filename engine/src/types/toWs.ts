@@ -36,4 +36,52 @@ export type TradeAddedMessage = {
     }
 }
 
-export type WsMessage = TickerUpdateMessage | DepthUpdateMessage | TradeAddedMessage;
+export type OrderPlacedMessage = {
+    stream: string,
+    data: {
+        type: "ORDER_PLACED",
+        payload: {
+            orderId: string,
+            executedQty: number,
+            market: string,
+            price: string,
+            quantity: string,
+            side: "buy" | "sell",
+            userId: string,
+            status: "filled" | "partial" | "open",
+            timestamp: number
+        }
+    }
+}
+
+export type OrderUpdateMessage = {
+    stream: string,
+    data: {
+        type: "ORDER_UPDATE",
+        payload: {
+            orderId: string,
+            filled: number,
+            price: string,
+            market: string
+        }
+    }
+}
+
+export type OrderCancelledMessage = {
+    stream: string,
+    data: {
+        type: "ORDER_CANCELLED",
+        payload: {
+            orderId: string,
+            market: string,
+            price: string,
+            quantity: string,
+            filled: number,
+            side: "buy" | "sell",
+            remainingQty: number,
+            timestamp: number
+        }
+    }
+}
+
+export type WsMessage = TickerUpdateMessage | DepthUpdateMessage | TradeAddedMessage | OrderPlacedMessage | OrderUpdateMessage | OrderCancelledMessage;

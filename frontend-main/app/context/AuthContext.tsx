@@ -156,8 +156,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (response.data.success) {
         const userData = response.data.data.user;
+        const accessToken = response.data.data.accessToken;
+
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
+
+        // Store accessToken for WebSocket authentication (cross-domain issue workaround)
+        if (accessToken) {
+          localStorage.setItem("accessToken", accessToken);
+        }
         // Cookies are set automatically by the browser due to defaults.withCredentials
       }
     } catch (error) {
@@ -202,6 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setUser(null);
       localStorage.removeItem("user");
+      localStorage.removeItem("accessToken");
       router.push("/login");
     }
   };

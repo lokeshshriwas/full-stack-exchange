@@ -12,4 +12,11 @@ export type UnsubscribeMessage = {
     params: string[]
 }
 
-export type IncomingMessage = SubscribeMessage | UnsubscribeMessage;
+export const AUTH = "AUTH";
+
+export type AuthMessage = {
+    method: typeof AUTH,
+    params: string[]
+}
+
+export type IncomingMessage = SubscribeMessage | UnsubscribeMessage | AuthMessage;

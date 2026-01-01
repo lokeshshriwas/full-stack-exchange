@@ -1,10 +1,4 @@
 export const TRADE_ADDED = "TRADE_ADDED";
 export const ORDER_UPDATE = "ORDER_UPDATE";
-
-
-// export type MessageFromOrderbook = {
-//     clientId: string;
-//     message: {
-//         type: "DEPTH",
-//     }
-// }
+export const ORDER_CANCELLED = "ORDER_CANCELLED";
+export const ORDER_PLACED = "ORDER_PLACED";

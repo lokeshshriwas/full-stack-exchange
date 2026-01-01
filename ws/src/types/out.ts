@@ -12,7 +12,7 @@ export type TickerUpdateMessage = {
         id: number,
         e: "ticker"
     }
-} 
+}
 
 export type DepthUpdateMessage = {
     type: "depth",
@@ -24,4 +24,39 @@ export type DepthUpdateMessage = {
     }
 }
 
-export type OutgoingMessage = TickerUpdateMessage | DepthUpdateMessage;
+export type OrderPlacedMessage = {
+    stream: string,
+    data: {
+        type: "ORDER_PLACED",
+        payload: {
+            orderId: string,
+            executedQty: number,
+            market: string,
+            price: string,
+            quantity: string,
+            side: "buy" | "sell",
+            userId: string,
+            status: "filled" | "partial" | "open",
+            timestamp: number
+        }
+    }
+}
+
+export type OrderCancelledMessage = {
+    stream: string,
+    data: {
+        type: "ORDER_CANCELLED",
+        payload: {
+            orderId: string,
+            market: string,
+            price: string,
+            quantity: string,
+            filled: number,
+            side: "buy" | "sell",
+            remainingQty: number,
+            timestamp: number
+        }
+    }
+}
+
+export type OutgoingMessage = TickerUpdateMessage | DepthUpdateMessage | OrderPlacedMessage | OrderCancelledMessage;

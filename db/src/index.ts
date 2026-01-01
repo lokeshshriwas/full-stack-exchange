@@ -132,6 +132,125 @@ async function processTrades() {
         console.log(`✔ Inserted/Updated order ${data.data.orderId}`);
       }
 
+      if (data.type === "ORDER_UPDATE") {
+        try {
+          const orderId = data.data.orderId;
+          const executedQty = data.data.executedQty;
+          const market = data.data.market;
+          const price = data.data.price;
+          const quantity = data.data.quantity;
+          const side = data.data.side;
+
+          if (quantity) {
+            // Full update (likely Taker)
+            const status = Number(executedQty) === Number(quantity) ? "filled" : "partial";
+            const query = `
+                INSERT INTO orders (id, user_id, symbol, price, qty, side, filled, status)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                ON CONFLICT (id) DO UPDATE SET filled = $7, status = $8
+             `;
+            // Note: user_id is missing in data.data for ORDER_UPDATE for Taker in Engine logic?
+            // Let's check Engine.ts logic again.
+            // Taker update: orderId, executedQty, market, price, quantity, side. MISSING userId.
+            // Wait, INSERT requires user_id.
+            // If order exists, we don't need user_id for UPDATE.
+            // But ON CONFLICT requires valid values for INSERT.
+
+            // If I assume order ALREADY EXISTS (it should, or ORDER_PLACED handles it? 
+            // Taker order is created and may be filled immediately. 
+            // Engine emits `ORDER_PLACED` (handled above) AND `ORDER_UPDATE`?
+            // Engine `createOrder`:
+            // 1. `createDbTrades`
+            // 2. `updateDbOrders` (emits ORDER_UPDATE)
+            // 3. `publishWs...`
+            // 4. Returns... then `process` emits `ORDER_PLACED` (via DB queue or API? `process` sends `ORDER_PLACED` to Redis/API but also pushes to DB queue?
+
+            // Check `process` in Engine.ts:
+            // ...RedisManager.getInstance().pushMessage({ type: "ORDER_PLACED", data: ... });
+
+            // So `ORDER_PLACED` event acts as the creation.
+            // `ORDER_UPDATE` acts as the update.
+            // Race condition? 
+            // If `ORDER_UPDATE` comes before `ORDER_PLACED`, we might fail if we try to UPDATE non-existent order.
+            // But `ORDER_PLACED` is pushed *after* `createOrder` returns.
+            // `ORDER_UPDATE` is pushed *inside* `createOrder`.
+            // So `ORDER_UPDATE` comes FIRST.
+            // Use `market` from update?
+
+            // Only `ORDER_PLACED` has `userId`.
+            // So `ORDER_UPDATE` for Taker (New Order) CANNOT insert if it's the first message.
+
+            // This is a problem.
+            // Taker order flow:
+            // 1. Engine calls `createOrder`.
+            // 2. `createOrder` -> `updateDbOrders` -> Pushes `ORDER_UPDATE` (no userId).
+            // 3. `createOrder` returns.
+            // 4. `process` -> Pushes `ORDER_PLACED` (with userId).
+
+            // If DB worker processes `ORDER_UPDATE` first, it fails to find order?
+            // Or I should make `ORDER_UPDATE` handle strict update only?
+            // If strict update: `UPDATE orders SET ... WHERE id = ...`
+            // If no rows updated -> Order not found.
+            // But eventually `ORDER_PLACED` will come and Insert it with correct state?
+            // `ORDER_PLACED` has `filled` (executedQty).
+
+            // So `ORDER_PLACED` handles the final state of the Taker order quite well actually.
+            // `ORDER_UPDATE` for Taker helps redundant update?
+            // But `ORDER_UPDATE` is primarily defining for *fills*.
+
+            // Ideally:
+            // 1. Taker Order: `ORDER_PLACED` message contains everything needed.
+            // 2. Maker Order: `ORDER_PLACED` came long ago. Now we need `ORDER_UPDATE`.
+
+            // So `ORDER_UPDATE` is CRITICAL for Makers.
+            // For Makers, we update existing orders.
+            // For Taker, `ORDER_PLACED` handles it.
+
+            // So `ORDER_UPDATE` handler:
+            // If it's a Taker update (has quantity, side etc), we can probably ignore it IF we trust `ORDER_PLACED` will arrive with same info.
+            // OR better: Update if exists.
+
+            // BUT `ORDER_UPDATE` for Maker (partial info) is essential.
+
+            // Let's update `db/src/index.ts` to handle Maker updates (increment).
+            // And handle Taker updates (absolute).
+
+            const updateQuery = quantity
+              ? `UPDATE orders SET filled = $1, status = CASE WHEN $1 = $2 THEN 'filled' ELSE 'partial' END WHERE id = $3`
+              : `UPDATE orders SET filled = filled + $1, status = CASE WHEN filled + $1 >= qty THEN 'filled' ELSE 'partial' END WHERE id = $2`;
+
+            if (quantity) {
+              await pgClient.query(updateQuery, [executedQty, quantity, orderId]);
+            } else {
+              await pgClient.query(updateQuery, [executedQty, orderId]);
+            }
+            console.log(`✔ Updated order ${orderId}`);
+
+          } else {
+            // Maker update (incremental)
+            const updateQuery = `
+                    UPDATE orders 
+                    SET filled = filled + $1, 
+                        status = CASE WHEN filled + $1 >= qty THEN 'filled' ELSE 'partial' END 
+                    WHERE id = $2
+              `;
+            await pgClient.query(updateQuery, [executedQty, orderId]);
+            console.log(`✔ Updated fill for order ${orderId}`);
+          }
+        } catch (e) {
+          console.error("Error processing ORDER_UPDATE", e);
+        }
+      }
+
+      if (data.type === "ORDER_CANCELLED") {
+        const orderId = data.data.orderId;
+        const query = `
+            UPDATE orders SET status = 'cancelled' WHERE id = $1
+        `;
+        await pgClient.query(query, [orderId]);
+        console.log(`✔ Cancelled order ${orderId}`);
+      }
+
       if (data.type === "SNAPSHOT_SAVED") {
         const query = `
                         INSERT INTO orderbook_snapshots (market, bids, asks, last_trade_id)

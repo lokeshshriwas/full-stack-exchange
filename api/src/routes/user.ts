@@ -16,9 +16,18 @@ const REFRESH_SECRET = process.env.REFRESH_SECRET || "refresh_secret_password";
 const SALT_ROUNDS = 10;
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
-// Cookie configuration
-const getCookieConfig = (maxAge: number) => ({
-  httpOnly: true,
+// Cookie configuration for access token (needs to be accessible by JavaScript for WebSocket auth)
+const getAccessTokenCookieConfig = (maxAge: number) => ({
+  httpOnly: false, // Must be false for WebSocket authentication
+  secure: IS_PRODUCTION,
+  sameSite: IS_PRODUCTION ? ("strict" as const) : ("lax" as const),
+  path: "/",
+  maxAge,
+});
+
+// Cookie configuration for refresh token (keep secure with httpOnly)
+const getRefreshTokenCookieConfig = (maxAge: number) => ({
+  httpOnly: true, // Keep refresh token secure
   secure: IS_PRODUCTION,
   sameSite: IS_PRODUCTION ? ("strict" as const) : ("lax" as const),
   path: "/",
@@ -54,8 +63,8 @@ const setAuthCookies = (
     ? 30 * 24 * 60 * 60 * 1000 // 30 days
     : 7 * 24 * 60 * 60 * 1000; // 7 days
 
-  res.cookie("accessToken", accessToken, getCookieConfig(accessMaxAge));
-  res.cookie("refreshToken", refreshToken, getCookieConfig(refreshMaxAge));
+  res.cookie("accessToken", accessToken, getAccessTokenCookieConfig(accessMaxAge));
+  res.cookie("refreshToken", refreshToken, getRefreshTokenCookieConfig(refreshMaxAge));
 };
 
 // Clear auth cookies
@@ -178,6 +187,7 @@ userRouter.post("/login", async (req: Request, res: Response) => {
           email: user.email,
           createdAt: user.created_at,
         },
+        accessToken, // Include token for localStorage (WebSocket auth on different domain)
       },
     });
   } catch (error) {
