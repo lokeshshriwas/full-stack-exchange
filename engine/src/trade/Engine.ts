@@ -302,8 +302,6 @@ export class Engine {
         }
         break;
 
-
-
       case CANCEL_ORDER:
         try {
           const orderId = message.data.orderId;
@@ -508,7 +506,6 @@ export class Engine {
   addOrderbook(orderbook: Orderbook) {
     this.orderbooks.push(orderbook);
   }
-
 
   async createOrder(market: string, price: string, quantity: string, side: "buy" | "sell", userId: string) {
     const orderbook = this.orderbooks.find(o => o.ticker() === market);

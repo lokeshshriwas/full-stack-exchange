@@ -13,12 +13,11 @@ import {
   SiSolana,
   SiBinance,
   SiRipple,
-  SiCardano,
   SiDogecoin,
-  SiPolygon,
-  SiLitecoin,
   SiChainlink,
+  SiPolygon,
 } from "react-icons/si";
+import { BsCurrencyExchange } from "react-icons/bs";
 import { RiCoinLine } from "react-icons/ri";
 import { BiDollarCircle } from "react-icons/bi";
 import { HiMiniArrowsRightLeft } from "react-icons/hi2";
@@ -31,21 +30,170 @@ import AssetBalanceCard from "../components/balance/AssetBalanceCard";
 
 const API_BASE_URL = "http://localhost:8080/api/v2";
 
-
 // Available cryptocurrencies list
 export const AVAILABLE_CRYPTOCURRENCIES: Cryptocurrency[] = [
-  { symbol: "USDC", name: "USD Coin", icon: <BiDollarCircle />, decimals: 6, isStablecoin: true },
-  { symbol: "USDT", name: "Tether", icon: <BiDollarCircle />, decimals: 6, isStablecoin: true },
+  {
+    symbol: "USDC",
+    name: "USD Coin",
+    icon: <BiDollarCircle />,
+    decimals: 6,
+    isStablecoin: true,
+  },
   { symbol: "BTC", name: "Bitcoin", icon: <FaBitcoin />, decimals: 8 },
   { symbol: "ETH", name: "Ethereum", icon: <FaEthereum />, decimals: 18 },
-  { symbol: "SOL", name: "Solana", icon: <SiSolana />, decimals: 9 },
   { symbol: "BNB", name: "BNB", icon: <SiBinance />, decimals: 18 },
-  { symbol: "XRP", name: "Ripple", icon: <SiRipple />, decimals: 6 },
-  { symbol: "ADA", name: "Cardano", icon: <SiCardano />, decimals: 6 },
-  { symbol: "DOGE", name: "Dogecoin", icon: <SiDogecoin />, decimals: 8 },
-  { symbol: "MATIC", name: "Polygon", icon: <SiPolygon />, decimals: 18 },
-  { symbol: "LTC", name: "Litecoin", icon: <SiLitecoin />, decimals: 8 },
+  { symbol: "SOL", name: "Solana", icon: <SiSolana />, decimals: 9 },
+  { symbol: "AAVE", name: "Aave", icon: <BsCurrencyExchange />, decimals: 18 },
+  { symbol: "HYPE", name: "Hype", icon: <BsCurrencyExchange />, decimals: 18 },
   { symbol: "LINK", name: "Chainlink", icon: <SiChainlink />, decimals: 18 },
+  { symbol: "TRUMP", name: "Trump", icon: <BsCurrencyExchange />, decimals: 6 },
+  {
+    symbol: "UNI",
+    name: "Uniswap",
+    icon: <BsCurrencyExchange />,
+    decimals: 18,
+  },
+  { symbol: "XRP", name: "Ripple", icon: <SiRipple />, decimals: 6 },
+  { symbol: "APT", name: "Aptos", icon: <BsCurrencyExchange />, decimals: 8 },
+  { symbol: "SUI", name: "Sui", icon: <BsCurrencyExchange />, decimals: 9 },
+  {
+    symbol: "ZRO",
+    name: "LayerZero",
+    icon: <BsCurrencyExchange />,
+    decimals: 18,
+  },
+  {
+    symbol: "RENDER",
+    name: "Render",
+    icon: <BsCurrencyExchange />,
+    decimals: 8,
+  },
+  {
+    symbol: "USDT",
+    name: "Tether",
+    icon: <BiDollarCircle />,
+    decimals: 6,
+    isStablecoin: true,
+  },
+  { symbol: "RAY", name: "Raydium", icon: <BsCurrencyExchange />, decimals: 6 },
+  { symbol: "0G", name: "0G", icon: <BsCurrencyExchange />, decimals: 18 },
+  {
+    symbol: "LDO",
+    name: "Lido DAO",
+    icon: <BsCurrencyExchange />,
+    decimals: 18,
+  },
+  {
+    symbol: "WLD",
+    name: "Worldcoin",
+    icon: <BsCurrencyExchange />,
+    decimals: 18,
+  },
+  { symbol: "ONDO", name: "Ondo", icon: <BsCurrencyExchange />, decimals: 18 },
+  {
+    symbol: "WIF",
+    name: "dogwifhat",
+    icon: <BsCurrencyExchange />,
+    decimals: 6,
+  },
+  { symbol: "JTO", name: "Jito", icon: <BsCurrencyExchange />, decimals: 9 },
+  { symbol: "MET", name: "Met", icon: <BsCurrencyExchange />, decimals: 18 },
+  { symbol: "ME", name: "ME", icon: <BsCurrencyExchange />, decimals: 6 },
+  { symbol: "ENA", name: "Ethena", icon: <BsCurrencyExchange />, decimals: 18 },
+  {
+    symbol: "APE",
+    name: "ApeCoin",
+    icon: <BsCurrencyExchange />,
+    decimals: 18,
+  },
+  { symbol: "JUP", name: "Jupiter", icon: <BsCurrencyExchange />, decimals: 6 },
+  { symbol: "DRIFT", name: "Drift", icon: <BsCurrencyExchange />, decimals: 9 },
+  { symbol: "IO", name: "IO", icon: <BsCurrencyExchange />, decimals: 18 },
+  { symbol: "WLFI", name: "WLFI", icon: <BsCurrencyExchange />, decimals: 18 },
+  { symbol: "XPL", name: "XPL", icon: <BsCurrencyExchange />, decimals: 18 },
+  { symbol: "DOGE", name: "Dogecoin", icon: <SiDogecoin />, decimals: 8 },
+  { symbol: "SEI", name: "Sei", icon: <BsCurrencyExchange />, decimals: 6 },
+  { symbol: "POL", name: "Polygon", icon: <SiPolygon />, decimals: 18 },
+  { symbol: "2Z", name: "2Z", icon: <BsCurrencyExchange />, decimals: 18 },
+  {
+    symbol: "STRK",
+    name: "Starknet",
+    icon: <BsCurrencyExchange />,
+    decimals: 18,
+  },
+  {
+    symbol: "FLOCK",
+    name: "Flock",
+    icon: <BsCurrencyExchange />,
+    decimals: 18,
+  },
+  { symbol: "ES", name: "ES", icon: <BsCurrencyExchange />, decimals: 18 },
+  { symbol: "TNSR", name: "Tensor", icon: <BsCurrencyExchange />, decimals: 9 },
+  {
+    symbol: "CLOUD",
+    name: "Cloud",
+    icon: <BsCurrencyExchange />,
+    decimals: 18,
+  },
+  { symbol: "WCT", name: "WCT", icon: <BsCurrencyExchange />, decimals: 18 },
+  {
+    symbol: "SONIC",
+    name: "Sonic",
+    icon: <BsCurrencyExchange />,
+    decimals: 18,
+  },
+  { symbol: "PIPE", name: "Pipe", icon: <BsCurrencyExchange />, decimals: 18 },
+  {
+    symbol: "PYTH",
+    name: "Pyth Network",
+    icon: <BsCurrencyExchange />,
+    decimals: 6,
+  },
+  {
+    symbol: "KMNO",
+    name: "Kamino",
+    icon: <BsCurrencyExchange />,
+    decimals: 18,
+  },
+  { symbol: "DEEP", name: "Deep", icon: <BsCurrencyExchange />, decimals: 18 },
+  { symbol: "W", name: "Wormhole", icon: <BsCurrencyExchange />, decimals: 18 },
+  {
+    symbol: "SWTCH",
+    name: "Switch",
+    icon: <BsCurrencyExchange />,
+    decimals: 18,
+  },
+  { symbol: "BLUE", name: "Blue", icon: <BsCurrencyExchange />, decimals: 18 },
+  { symbol: "MON", name: "Mon", icon: <BsCurrencyExchange />, decimals: 18 },
+  { symbol: "PRCL", name: "Parcl", icon: <BsCurrencyExchange />, decimals: 18 },
+  {
+    symbol: "STABLE",
+    name: "Stable",
+    icon: <BsCurrencyExchange />,
+    decimals: 6,
+  },
+  {
+    symbol: "PENGU",
+    name: "Pudgy Penguins",
+    icon: <BsCurrencyExchange />,
+    decimals: 6,
+  },
+  { symbol: "PUMP", name: "Pump", icon: <BsCurrencyExchange />, decimals: 6 },
+  {
+    symbol: "BOME",
+    name: "Book of Meme",
+    icon: <BsCurrencyExchange />,
+    decimals: 6,
+  },
+  { symbol: "WEN", name: "Wen", icon: <BsCurrencyExchange />, decimals: 6 },
+  { symbol: "BONK", name: "Bonk", icon: <BsCurrencyExchange />, decimals: 5 },
+  {
+    symbol: "SHIB",
+    name: "Shiba Inu",
+    icon: <BsCurrencyExchange />,
+    decimals: 18,
+  },
+  { symbol: "PEPE", name: "Pepe", icon: <BsCurrencyExchange />, decimals: 18 },
 ];
 
 // Icon mapping
@@ -65,9 +213,9 @@ export default function BalancePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingBalance, setIsAddingBalance] = useState(false);
-  const [preSelectedSymbol, setPreSelectedSymbol] = useState<string | undefined>(
-    undefined
-  );
+  const [preSelectedSymbol, setPreSelectedSymbol] = useState<
+    string | undefined
+  >(undefined);
 
   const { user, isLoading: authLoading } = useAuth();
 

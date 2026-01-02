@@ -6,6 +6,7 @@ import { trimString } from "../utils/helper";
 import { useUser } from "../hooks/useUser";
 import { useRouter } from "next/navigation";
 import { useBalance } from "../hooks/useBalance";
+import toast from "react-hot-toast";
 
 export function SwapUI({
   market,
@@ -153,7 +154,7 @@ export function SwapUI({
               ) : user ? (
                 <button
                   type="button"
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.preventDefault();
 
                     const price =
@@ -161,13 +162,16 @@ export function SwapUI({
 
                     const action = activeTab === "buy" ? "buy" : "sell";
 
-                    makeOrder(
+                    const { data } = await makeOrder(
                       market,
                       price.toString(),
                       numQty.toString(),
                       action,
                       user.id
                     );
+                    if (data.error) {
+                      toast.error("Insufficient balance");
+                    }
                   }}
                   className={`font-semibold focus:ring-blue-200 text-center h-12 rounded-xl text-base px-4 py-2 my-4 ${
                     activeTab === "buy" ? "bg-green-500" : "bg-red-500"
