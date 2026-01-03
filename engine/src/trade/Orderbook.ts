@@ -101,6 +101,11 @@ export class Orderbook {
         let executedQty = 0;
 
         for (let i = 0; i < this.asks.length; i++) {
+            // SELF-TRADE PREVENTION: Skip orders from the same user
+            if (this.asks[i].userId === order.userId) {
+                continue;
+            }
+
             if (this.asks[i].price <= order.price && executedQty < order.quantity) {
                 const remainingAskQty = this.asks[i].quantity - this.asks[i].filled;
                 const filledQty = Math.min((order.quantity - executedQty), remainingAskQty);
@@ -146,6 +151,11 @@ export class Orderbook {
         let executedQty = 0;
 
         for (let i = 0; i < this.bids.length; i++) {
+            // SELF-TRADE PREVENTION: Skip orders from the same user
+            if (this.bids[i].userId === order.userId) {
+                continue;
+            }
+
             if (this.bids[i].price >= order.price && executedQty < order.quantity) {
                 const remainingBidQty = this.bids[i].quantity - this.bids[i].filled;
                 const amountRemaining = Math.min(order.quantity - executedQty, remainingBidQty);

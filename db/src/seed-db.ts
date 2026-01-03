@@ -14,9 +14,7 @@ async function initializeDB() {
   await client.query(`
     -- Drop tables in dependency order
     DROP TABLE IF EXISTS balance_ledger;
-    DROP TABLE IF EXISTS spot_positions;
     DROP TABLE IF EXISTS balances;
-    DROP TABLE IF EXISTS markets;
     DROP TABLE IF EXISTS assets;
     DROP TABLE IF EXISTS users;
     DROP TABLE IF EXISTS orders;
@@ -40,14 +38,6 @@ async function initializeDB() {
       decimals INT NOT NULL
     );
 
-    -- MARKETS (SPOT ONLY)
-    CREATE TABLE markets (
-      id SERIAL PRIMARY KEY,
-      base_asset_id INT NOT NULL REFERENCES assets(id),
-      quote_asset_id INT NOT NULL REFERENCES assets(id),
-      symbol VARCHAR(30) UNIQUE NOT NULL
-    );
-
     -- USER BALANCES (HOLDINGS)
     -- Modified to match Engine's string IDs and Asset Symbols
     CREATE TABLE balances (
@@ -69,16 +59,6 @@ async function initializeDB() {
       type VARCHAR(20) NOT NULL, -- 'trade', 'order_place', 'cancel', 'deposit'
       event_id VARCHAR(100), -- orderId or tradeId
       timestamp TIMESTAMP DEFAULT NOW()
-    );
-
-    -- USER SPOT POSITIONS (MARKET-WISE)
-    CREATE TABLE spot_positions (
-      user_id VARCHAR(50) NOT NULL,
-      market VARCHAR(20) NOT NULL, -- Changed from market_id to match Engine
-      base_quantity NUMERIC(36,18) DEFAULT 0,
-      avg_buy_price NUMERIC(36,18),
-      updated_at TIMESTAMP DEFAULT NOW(),
-      PRIMARY KEY (user_id, market)
     );
 
     -- TRADES HISTORY

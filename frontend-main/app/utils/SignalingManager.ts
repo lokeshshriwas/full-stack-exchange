@@ -214,8 +214,8 @@ export class SignalingManager {
               callback(newTrade);
             }
           }
-          // Handle open orders messages
-          if (type === "ORDER_PLACED" || type === "ORDER_CANCELLED") {
+          // Handle open orders messages (taker and maker notifications)
+          if (type === "ORDER_PLACED" || type === "ORDER_CANCELLED" || type === "ORDER_FILL") {
             callback(message.data);
           }
         });

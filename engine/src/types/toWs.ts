@@ -84,4 +84,20 @@ export type OrderCancelledMessage = {
     }
 }
 
-export type WsMessage = TickerUpdateMessage | DepthUpdateMessage | TradeAddedMessage | OrderPlacedMessage | OrderUpdateMessage | OrderCancelledMessage;
+export type OrderFillMessage = {
+    stream: string,
+    data: {
+        type: "ORDER_FILL",
+        payload: {
+            orderId: string,
+            filledQty: number,
+            price: string,
+            market: string,
+            side: "buy" | "sell",
+            timestamp: number
+        }
+    }
+}
+
+export type WsMessage = TickerUpdateMessage | DepthUpdateMessage | TradeAddedMessage | OrderPlacedMessage | OrderUpdateMessage | OrderCancelledMessage | OrderFillMessage;
+

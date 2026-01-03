@@ -19,7 +19,9 @@ export type DbMessage = {
         price: string,
         quantity: string,
         side: "buy" | "sell",
-        userId: string
+        userId: string,
+        status?: "open" | "partial" | "filled",
+        timestamp?: number
     }
 } | {
     type: "SNAPSHOT_SAVED",

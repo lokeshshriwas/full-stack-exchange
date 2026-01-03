@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { OrderTable } from "./OrderTable";
@@ -24,13 +24,35 @@ export const Orders = ({ market }: OrdersProps) => {
   const [activeTab, setActiveTab] = useState<"open" | "history">("open");
   const [openOrders, setOpenOrders] = useState<Order[]>([]);
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
+  const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Fetch order history - can be called from WS callbacks
+  const fetchOrderHistory = useCallback(async () => {
+    try {
+      const historyRes = await axios.get(
+        `http://localhost:8080/api/v2/order/history`,
+        { withCredentials: true }
+      );
+      setOrderHistory(historyRes.data);
+    } catch (err) {
+      console.error("[Orders] History fetch failed", err);
+    }
+  }, []);
+
+  // Debounced history fetch to handle rapid events and DB write delay
+  const debouncedFetchHistory = useCallback(() => {
+    if (historyTimeoutRef.current) {
+      clearTimeout(historyTimeoutRef.current);
+    }
+    historyTimeoutRef.current = setTimeout(fetchOrderHistory, 200);
+  }, [fetchOrderHistory]);
+
+  // Initial data fetch
   useEffect(() => {
     let mounted = true;
 
-    const fetchOrders = async () => {
+    const fetchOpenOrders = async () => {
       try {
-        // Fetch open orders
         const openRes = await axios.get(
           `http://localhost:8080/api/v2/order/open?market=${market}`,
           { withCredentials: true }
@@ -49,33 +71,24 @@ export const Orders = ({ market }: OrdersProps) => {
             }))
           );
         }
-
-        // Fetch order history
-        const historyRes = await axios.get(
-          `http://localhost:8080/api/v2/order/history`,
-          { withCredentials: true }
-        );
-
-        if (mounted) {
-          setOrderHistory(historyRes.data);
-        }
       } catch (err) {
-        console.error("[Orders] HTTP fetch failed", err);
+        console.error("[Orders] Open orders fetch failed", err);
       }
     };
 
-    // Initial fetch
-    fetchOrders();
-
-    // Poll every 3 seconds
-    const interval = setInterval(fetchOrders, 3000);
+    // Initial fetch only - no polling
+    fetchOpenOrders();
+    fetchOrderHistory();
 
     return () => {
       mounted = false;
-      clearInterval(interval);
+      if (historyTimeoutRef.current) {
+        clearTimeout(historyTimeoutRef.current);
+      }
     };
-  }, [market]);
+  }, [market, fetchOrderHistory]);
 
+  // WebSocket subscriptions for real-time updates
   useEffect(() => {
     const signalingManager = SignalingManager.getInstance();
 
@@ -83,19 +96,20 @@ export const Orders = ({ market }: OrdersProps) => {
       const userId = signalingManager.getAuthenticatedUserId();
       if (!userId) return;
 
-      // ORDER PLACED / UPDATED
+      // ORDER_PLACED - new order or taker update
       signalingManager.registerCallback(
         "ORDER_PLACED",
         (data: any) => {
           const payload = data.payload;
           if (payload.market !== market) return;
 
-          setOpenOrders((prev) => {
-            // Remove filled orders
-            if (payload.status === "filled") {
-              return prev.filter((o) => o.orderId !== payload.orderId);
-            }
+          // If fully filled, don't add to open - just refetch history
+          if (payload.status === "filled") {
+            debouncedFetchHistory();
+            return;
+          }
 
+          setOpenOrders((prev) => {
             const updated: Order = {
               orderId: payload.orderId,
               market: payload.market,
@@ -115,7 +129,37 @@ export const Orders = ({ market }: OrdersProps) => {
         `orders-placed-${market}`
       );
 
-      // ORDER CANCELLED
+      // ORDER_FILL - maker's order was filled by another user
+      signalingManager.registerCallback(
+        "ORDER_FILL",
+        (data: any) => {
+          const payload = data.payload;
+          if (payload.market !== market) return;
+
+          setOpenOrders((prev) => {
+            const order = prev.find((o) => o.orderId === payload.orderId);
+            if (!order) return prev;
+
+            const newFilled = order.filled + payload.filledQty;
+
+            // Check if fully filled
+            if (newFilled >= parseFloat(order.quantity)) {
+              debouncedFetchHistory();
+              return prev.filter((o) => o.orderId !== payload.orderId);
+            }
+
+            // Partial fill - update in place
+            return prev.map((o) =>
+              o.orderId === payload.orderId
+                ? { ...o, filled: newFilled, status: "partial" }
+                : o
+            );
+          });
+        },
+        `orders-fill-${market}`
+      );
+
+      // ORDER_CANCELLED
       signalingManager.registerCallback(
         "ORDER_CANCELLED",
         (data: any) => {
@@ -125,11 +169,12 @@ export const Orders = ({ market }: OrdersProps) => {
           setOpenOrders((prev) =>
             prev.filter((o) => o.orderId !== payload.orderId)
           );
+          debouncedFetchHistory();
         },
         `orders-cancelled-${market}`
       );
 
-      // Subscribe
+      // Subscribe to user's order channel
       signalingManager.sendMessage({
         method: "SUBSCRIBE",
         params: [`open_orders:user:${userId}`],
@@ -162,6 +207,10 @@ export const Orders = ({ market }: OrdersProps) => {
         `orders-placed-${market}`
       );
       signalingManager.deRegisterCallback(
+        "ORDER_FILL",
+        `orders-fill-${market}`
+      );
+      signalingManager.deRegisterCallback(
         "ORDER_CANCELLED",
         `orders-cancelled-${market}`
       );
@@ -170,7 +219,7 @@ export const Orders = ({ market }: OrdersProps) => {
         `orders-auth-${market}`
       );
     };
-  }, [market]);
+  }, [market, debouncedFetchHistory]);
 
   const handleCancel = async (orderId: string, marketIdx: string) => {
     try {

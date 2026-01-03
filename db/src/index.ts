@@ -113,11 +113,24 @@ async function processTrades() {
       }
 
       if (data.type === "ORDER_PLACED") {
+        // Use status from engine data, compute if not provided
+        const status = data.data.status ||
+          (Number(data.data.executedQty) >= Number(data.data.quantity) ? 'filled' :
+            Number(data.data.executedQty) > 0 ? 'partial' : 'open');
+
+        // Idempotent upsert: use GREATEST to ensure fills are monotonically increasing
+        // This handles out-of-order message delivery
         const query = `
-                        INSERT INTO orders (id, user_id, symbol, price, qty, side, filled, status)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                        ON CONFLICT (id) DO UPDATE SET filled = $7, status = $8
-                    `;
+          INSERT INTO orders (id, user_id, symbol, price, qty, side, filled, status)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          ON CONFLICT (id) DO UPDATE SET 
+            filled = GREATEST(orders.filled, EXCLUDED.filled),
+            status = CASE 
+              WHEN GREATEST(orders.filled, EXCLUDED.filled) >= orders.qty THEN 'filled'
+              WHEN GREATEST(orders.filled, EXCLUDED.filled) > 0 THEN 'partial'
+              ELSE EXCLUDED.status
+            END
+        `;
         const values = [
           data.data.orderId,
           data.data.userId,
@@ -126,10 +139,10 @@ async function processTrades() {
           data.data.quantity,
           data.data.side,
           data.data.executedQty,
-          'open'
+          status
         ];
         await pgClient.query(query, values);
-        console.log(`✔ Inserted/Updated order ${data.data.orderId}`);
+        console.log(`✔ Inserted/Updated order ${data.data.orderId} with status ${status}`);
       }
 
       if (data.type === "ORDER_UPDATE") {

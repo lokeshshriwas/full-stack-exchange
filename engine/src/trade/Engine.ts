@@ -271,23 +271,8 @@ export class Engine {
             }
           });
 
-          // This is now handled by publishWsOrders() method which publishes to open_orders:user channel
-          // No need to duplicate here
-
-          RedisManager.getInstance().pushMessage({
-            type: "ORDER_PLACED",
-            data: {
-              orderId,
-              executedQty,
-              market,
-              price: message.data.price,
-              quantity: message.data.quantity,
-              side: message.data.side,
-              userId: message.data.userId,
-              status: "open" as const,
-              timestamp: Date.now()
-            }
-          });
+          // ORDER_PLACED is now pushed in createOrder() with correct filled/status
+          // This ensures DB persistence happens BEFORE the API response
         } catch (e: any) {
           console.log("Error creating order:", e.message);
           RedisManager.getInstance().sendToApi(clientId, {
@@ -550,14 +535,71 @@ export class Engine {
     // Update balances based on fills - pass orderPrice for price improvement calculation
     await this.updateBalance(userId, baseAsset, quoteAsset, side, fills, executedQty, numericPrice, orderId);
 
+    // === DB PERSISTENCE FIRST (to guarantee order history) ===
+
+    // 1. Persist TAKER order with correct filled status
+    const takerStatus = executedQty === numericQuantity ? "filled" : (executedQty > 0 ? "partial" : "open");
+    this.persistOrderToDb(orderId, userId, market, price, quantity, side, executedQty, takerStatus);
+
+    // 2. Persist MAKER order updates (incremental fills)
+    for (const fill of fills) {
+      this.persistMakerFillToDb(fill.markerOrderId, fill.qty);
+    }
+
+    // 3. Create trade records
     this.createDbTrades(fills, market, userId, orderId);
-    this.updateDbOrders(order, executedQty, fills, market);
+
+    // === WEBSOCKET UPDATES ===
     this.publishWsDepthUpdates(fills, price, side, market);
     this.publishWsTrades(fills, userId, market);
     this.publishWsOrders(order, executedQty, fills, market);
 
     return { executedQty, fills, orderId: order.orderId };
   }
+
+  /**
+   * Persist a new order to the database
+   */
+  persistOrderToDb(
+    orderId: string,
+    oderId: string,
+    market: string,
+    price: string,
+    quantity: string,
+    side: "buy" | "sell",
+    filled: number,
+    status: "open" | "partial" | "filled"
+  ) {
+    RedisManager.getInstance().pushMessage({
+      type: "ORDER_PLACED",
+      data: {
+        orderId,
+        userId: oderId,
+        market,
+        price,
+        quantity,
+        side,
+        executedQty: filled,
+        status,
+        timestamp: Date.now()
+      }
+    });
+  }
+
+  /**
+   * Persist a maker's fill update to the database (incremental)
+   */
+  persistMakerFillToDb(makerOrderId: string, filledQty: number) {
+    RedisManager.getInstance().pushMessage({
+      type: ORDER_UPDATE,
+      data: {
+        orderId: makerOrderId,
+        executedQty: filledQty
+        // No quantity field = incremental update in DB worker
+      }
+    });
+  }
+
 
   /**
    * Check if user has sufficient funds and lock them using Redis atomic operations
@@ -772,14 +814,15 @@ export class Engine {
   }
 
   publishWsOrders(order: Order, executedQty: number, fills: Fill[], market: string) {
-    let status: "filled" | "partial" | "open" = "open";
+    // === TAKER UPDATE ===
+    let takerStatus: "filled" | "partial" | "open" = "open";
     if (executedQty === order.quantity) {
-      status = "filled";
+      takerStatus = "filled";
     } else if (executedQty > 0) {
-      status = "partial";
+      takerStatus = "partial";
     }
 
-    const orderData: OrderPlacedMessage = {
+    const takerOrderData: OrderPlacedMessage = {
       stream: `open_orders:user:${order.userId}`,
       data: {
         type: "ORDER_PLACED",
@@ -790,15 +833,53 @@ export class Engine {
           price: order.price.toString(),
           quantity: order.quantity.toString(),
           side: order.side,
-          status: status,
+          status: takerStatus,
           userId: order.userId,
           timestamp: Date.now()
         }
       }
     };
 
-    RedisManager.getInstance().publishMessage(`open_orders:user:${order.userId}`, orderData);
-    console.log(`[Engine] Published order ${order.orderId} to open_orders:user:${order.userId}`);
+    RedisManager.getInstance().publishMessage(`open_orders:user:${order.userId}`, takerOrderData);
+    console.log(`[Engine] Published ORDER_PLACED to taker ${order.userId} for order ${order.orderId}`);
+
+    // === MAKER UPDATES ===
+    // Group fills by maker to send a single notification per maker
+    const makerFillsMap = new Map<string, { orderId: string, totalFilled: number, price: string }>();
+
+    for (const fill of fills) {
+      const existing = makerFillsMap.get(fill.otherUserId);
+      if (existing && existing.orderId === fill.markerOrderId) {
+        existing.totalFilled += fill.qty;
+      } else {
+        makerFillsMap.set(fill.otherUserId, {
+          orderId: fill.markerOrderId,
+          totalFilled: fill.qty,
+          price: fill.price
+        });
+      }
+    }
+
+    // Send ORDER_FILL update to each maker
+    for (const [makerUserId, fillData] of makerFillsMap) {
+      const makerSide: "buy" | "sell" = order.side === "buy" ? "sell" : "buy";
+      const makerOrderData = {
+        stream: `open_orders:user:${makerUserId}`,
+        data: {
+          type: "ORDER_FILL" as const,
+          payload: {
+            orderId: fillData.orderId,
+            filledQty: fillData.totalFilled,
+            price: fillData.price,
+            market: market,
+            side: makerSide,
+            timestamp: Date.now()
+          }
+        }
+      };
+      RedisManager.getInstance().publishMessage(`open_orders:user:${makerUserId}`, makerOrderData);
+      console.log(`[Engine] Published ORDER_FILL to maker ${makerUserId} for order ${fillData.orderId}`);
+    }
   }
 
   sendUpdatedDepthAt(price: string, market: string) {
