@@ -29,7 +29,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
   return (
     <div className="w-full overflow-x-auto">
       <table className="min-w-full text-left text-sm text-gray-400">
-        <thead className="bg-zinc-900 text-xs uppercase font-medium">
+        <thead className="dark:bg-zinc-900 bg-zinc-300 dark:text-white text-zinc-800 text-xs uppercase font-medium">
           <tr>
             <th className="px-4 py-2">Market</th>
             <th className="px-4 py-2">Side</th>
@@ -51,9 +51,9 @@ export const OrderTable: React.FC<OrderTableProps> = ({
             orders.map((order) => (
               <tr
                 key={order.orderId}
-                className="hover:bg-zinc-800/50 transition-colors"
+                className="dark:hover:bg-zinc-800/50 hover:bg-zinc-200 transition-colors"
               >
-                <td className="px-4 py-2 font-medium text-white">
+                <td className="px-4 py-2 font-medium dark:text-white text-zinc-800">
                   {order.market}
                 </td>
                 <td
@@ -63,11 +63,17 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                 >
                   {order.side.toUpperCase()}
                 </td>
-                <td className="px-4 py-2">{order.price}</td>
-                <td className="px-4 py-2">{order.quantity}</td>
-                <td className="px-4 py-2">{order.filled ? order.filled : 0}</td>
+                <td className="px-4 py-2 dark:text-white text-zinc-800 ">
+                  {order.price}
+                </td>
+                <td className="px-4 py-2 dark:text-white text-zinc-800 ">
+                  {order.quantity}
+                </td>
+                <td className="px-4 py-2 dark:text-white text-zinc-800 ">
+                  {order.filled ? order.filled : 0}
+                </td>
                 {showStatus && (
-                  <td className="px-4 py-2 capitalize">
+                  <td className="px-4 py-2 capitalize dark:text-white text-zinc-800 font-bold">
                     {order.status || "Open"}
                   </td>
                 )}

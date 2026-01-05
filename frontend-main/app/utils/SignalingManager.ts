@@ -64,9 +64,10 @@ export class SignalingManager {
   // Authenticate with JWT from localStorage (cross-domain workaround)
   public authenticate() {
     const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
 
-    if (!accessToken) {
-      console.warn('[SignalingManager] No accessToken in localStorage, skipping authentication');
+    if (!accessToken && !refreshToken) {
+      console.warn('[SignalingManager] No accessToken or refreshToken in localStorage, skipping authentication');
       return;
     }
 
@@ -74,7 +75,7 @@ export class SignalingManager {
 
     const authMessage = {
       method: 'AUTH',
-      params: [accessToken]
+      params: [accessToken, refreshToken]
     };
 
     if (!this.initializedBase) {

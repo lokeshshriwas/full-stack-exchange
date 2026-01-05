@@ -21,6 +21,7 @@ import { BsCurrencyExchange } from "react-icons/bs";
 import { RiCoinLine } from "react-icons/ri";
 import { BiDollarCircle } from "react-icons/bi";
 import { HiMiniArrowsRightLeft } from "react-icons/hi2";
+import { FaUserCircle } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 import AddCryptoModal from "../components/balance/AddCryptoModal";
@@ -350,6 +351,35 @@ export default function BalancePage() {
             <FaPlus />
             Add Crypto
           </button>
+        </div>
+
+        {/* User Profile Section */}
+        <div className="mb-8 border border-base-border-light rounded-xl p-6 bg-gradient-to-r from-base-background-l2 to-base-background-l1 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 pointer-events-none"></div>
+          <div className="relative flex items-center gap-5">
+            {/* Avatar */}
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-2 border-base-border-light flex items-center justify-center overflow-hidden">
+              <FaUserCircle className="text-5xl text-base-text-med-emphasis" />
+            </div>
+            {/* User Info */}
+            <div className="flex flex-col gap-1">
+              <h2 className="text-2xl font-bold text-base-text-high-emphasis">
+                {user?.fullName || user?.email?.split("@")[0] || "Trader"}
+              </h2>
+              <p className="text-base-text-med-emphasis text-sm">
+                {user?.email || "demo@exchange.com"}
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+                  <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>
+                  Active
+                </span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-base-background-l2 text-base-text-med-emphasis border border-base-border-light">
+                  Paper Trading
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Demo Banner */}

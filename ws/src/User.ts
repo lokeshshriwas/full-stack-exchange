@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || "";
+const REFRESH_SECRET = process.env.REFRESH_SECRET || "refresh_secret_password";
 
 export class User {
   private id: string;
@@ -88,31 +89,53 @@ export class User {
         const parsedMessage: IncomingMessage = JSON.parse(message);
 
         if (parsedMessage.method === AUTH) {
-          // Handle authentication
-          if (!parsedMessage.params || parsedMessage.params.length === 0) {
+          if (!parsedMessage.params || parsedMessage.params.length < 1) {
             this.sendError("Authentication token required");
             return;
           }
 
-          const token = parsedMessage.params[0];
+          const accessToken = parsedMessage.params[0];
+          const refreshToken = parsedMessage.params[1];
 
           try {
-            const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+            const decoded = jwt.verify(accessToken, JWT_SECRET) as { userId: string };
+
             this.authenticated = true;
-            this.authenticatedUserId = JSON.stringify(decoded.userId);
+            this.authenticatedUserId = decoded.userId;
 
-            console.log(`[WS] User ${this.id} authenticated as ${this.authenticatedUserId}`);
+          } catch (accessError) {
+            if (!refreshToken) {
+              this.sendError("Invalid or expired token");
+              return;
+            }
 
-            this.ws.send(JSON.stringify({
-              type: "auth_success",
-              userId: this.authenticatedUserId
-            }));
-          } catch (error) {
-            this.sendError("Invalid authentication token");
-            console.error(`[WS] Authentication failed for user ${this.id}:`, error);
+            try {
+              const decodedRefresh = jwt.verify(
+                refreshToken,
+                REFRESH_SECRET
+              ) as { userId: string };
+
+              this.authenticated = true;
+              this.authenticatedUserId = decodedRefresh.userId;
+
+            } catch (refreshError) {
+              this.sendError("Invalid authentication token");
+              return;
+            }
           }
+
+          console.log(`[WS] User ${this.id} authenticated as ${this.authenticatedUserId}`);
+
+          this.ws.send(
+            JSON.stringify({
+              type: "auth_success",
+              userId: this.authenticatedUserId,
+            })
+          );
+
           return;
         }
+
 
         if (parsedMessage.method === SUBSCRIBE) {
           parsedMessage.params.forEach((s) => {

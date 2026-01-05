@@ -64,13 +64,7 @@ export const Appbar = () => {
 
             <div className="flex items-center justify-center flex-row xs:flex gap-5 sm:mx-4 sm:gap-8">
               <div
-                onClick={() => router.push("/markets")}
-                className="focus:none items-center rounded-lg text-center font-semibold hover:opacity-90 hover:cursor-pointer focus:ring-blue-200 focus:outline-hidden disabled:opacity-80 disabled:hover:opacity-80 flex flex-col justify-center bg-transparent h-8 text-xs p-0 text-med-emphasis dark:text-slate-200 text-slate-500"
-              >
-                Market
-              </div>
-              <div
-                onClick={() => router.push("/trade/SOL_USDC")}
+                onClick={() => router.push("/trade/BTC_USDC")}
                 className="focus:none items-center rounded-lg text-center font-semibold hover:opacity-90 focus:ring-blue-200 focus:outline-hidden hover:cursor-pointer disabled:opacity-80 disabled:hover:opacity-80 flex flex-col justify-center bg-transparent h-8 text-xs p-0 text-med-emphasis dark:text-slate-200 text-slate-500"
               >
                 Trade

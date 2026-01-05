@@ -157,13 +157,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (response.data.success) {
         const userData = response.data.data.user;
         const accessToken = response.data.data.accessToken;
+        const refreshToken = response.data.data.refreshToken;
 
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
 
         // Store accessToken for WebSocket authentication (cross-domain issue workaround)
-        if (accessToken) {
+        if (accessToken && refreshToken) {
           localStorage.setItem("accessToken", accessToken);
+          localStorage.setItem("refreshToken", refreshToken);
         }
         // Cookies are set automatically by the browser due to defaults.withCredentials
       }

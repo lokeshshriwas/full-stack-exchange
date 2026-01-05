@@ -241,14 +241,14 @@ export const Orders = ({ market }: OrdersProps) => {
   };
 
   return (
-    <div className="w-full bg-zinc-900/50 border-t border-zinc-800">
+    <div className="w-full dark:bg-zinc-900/50 bg-white border-t border-zinc-800">
       <div className="flex border-b border-zinc-800">
         <button
           onClick={() => setActiveTab("open")}
           className={`px-6 py-3 text-sm font-medium ${
             activeTab === "open"
               ? "text-blue-500 border-b-2 border-blue-500"
-              : "text-zinc-400 hover:text-white"
+              : "dark:text-zinc-400 text-black dark:hover:text-white hover:text-zinc-600"
           }`}
         >
           Open Orders
@@ -258,7 +258,7 @@ export const Orders = ({ market }: OrdersProps) => {
           className={`px-6 py-3 text-sm font-medium ${
             activeTab === "history"
               ? "text-blue-500 border-b-2 border-blue-500"
-              : "text-zinc-400 hover:text-white"
+              : "dark:text-zinc-400 text-black dark:hover:text-white hover:text-zinc-600"
           }`}
         >
           Order History

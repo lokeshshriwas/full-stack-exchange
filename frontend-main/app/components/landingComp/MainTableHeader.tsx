@@ -16,7 +16,7 @@ const MainTableHeader = () => {
           Spot
         </div>
         <div
-          className={`flex justify-center flex-col cursor-pointer rounded-lg py-1 font-medium outline-hidden hover:opacity-90 text-high-emphasis px-3 h-8 text-sm ${
+          className={`flex justify-center flex-col cursor-not-allowed rounded-lg py-1 font-medium outline-hidden hover:opacity-90 text-high-emphasis px-3 h-8 text-sm  disabled:opacity-80 ${
             activeTab == "futures" && "bg-gray-200 dark:bg-[#3c3b3b]"
           } `}
           onClick={() => setActiveTab("futures")}
@@ -24,8 +24,8 @@ const MainTableHeader = () => {
           Futures
         </div>
         <div
-          className={`flex justify-center flex-col cursor-pointer rounded-lg py-1 font-medium outline-hidden hover:opacity-90 text-high-emphasis px-3 h-8 text-sm ${
-            activeTab == "lend" && "bg-gray-200 dark:bg-[#3c3b3b]"
+          className={`flex justify-center flex-col cursor-not-allowed rounded-lg py-1 font-medium outline-hidden hover:opacity-90 text-high-emphasis px-3 h-8 text-sm disabled:opacity-80 ${
+            activeTab == "lend" && "bg-gray-200 dark:bg-[#3c3b3b] "
           } `}
           onClick={() => setActiveTab("lend")}
         >
