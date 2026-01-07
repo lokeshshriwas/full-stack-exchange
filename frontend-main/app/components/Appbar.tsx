@@ -1,10 +1,11 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { CiSearch } from "react-icons/ci";
 import { useEffect, useState } from "react";
 import { getTickers } from "../utils/httpClient";
 import { useUser } from "../hooks/useUser";
+import { useAuth } from "../context/AuthContext";
 
 export const Appbar = () => {
   const router = useRouter();
@@ -12,9 +13,13 @@ export const Appbar = () => {
   const [markets, setMarkets] = useState<any[]>([]);
   const [marketToShow, setMarketToShow] = useState<any[]>([]);
   const [openModal, setOpenModal] = useState(false);
-  const { user, loading } = useUser();
 
-  // Load tickers correctly
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+
+  const { user, loading } = useUser();
+  const { logout } = useAuth();
+
   useEffect(() => {
     async function load() {
       const data = await getTickers();
@@ -28,7 +33,6 @@ export const Appbar = () => {
     load();
   }, []);
 
-  // Handle search
   useEffect(() => {
     if (!value.trim()) {
       setMarketToShow(markets);
@@ -40,20 +44,31 @@ export const Appbar = () => {
     setMarketToShow(filtered);
   }, [value, markets]);
 
-  // Close on ESC
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpenModal(false);
+      if (e.key === "Escape") {
+        setOpenModal(false);
+        setShowLogoutConfirm(false);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  const confirmLogout = async () => {
+    try {
+      setLogoutLoading(true);
+      await logout();
+    } finally {
+      setLogoutLoading(false);
+      setShowLogoutConfirm(false);
+    }
+  };
+
   return (
     <>
       <div className="relative flex h-14 w-full flex-col justify-center">
         <div className="flex items-center justify-between">
-          {/* Left Section */}
           <div className="flex items-center flex-row">
             <a
               href="/"
@@ -72,7 +87,6 @@ export const Appbar = () => {
             </div>
           </div>
 
-          {/* SEARCH INPUT */}
           <div className="absolute left-1/2 hidden -translate-x-1/2 justify-self-center min-[1470px]:inline-flex">
             <div className="flex items-center justify-between flex-row bg-gray-100 dark:bg-base-background-l2 focus-within:ring-black dark:focus-within:ring-accent-blue w-[340px] flex-1 cursor-pointer overflow-hidden rounded-xl px-1 ring-0 focus-within:ring-2">
               <div className="flex items-center flex-row flex-1">
@@ -80,10 +94,8 @@ export const Appbar = () => {
                   <CiSearch className="text-slate-500" />
                 </div>
                 <input
-                  aria-label="Search markets"
                   placeholder="Search markets"
                   className="bg-gray-100 dark:bg-base-background-l2 text-high-emphasis placeholder-low-emphasis h-8 w-full border-0 p-0 text-sm font-normal outline-hidden focus:ring-0"
-                  type="text"
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
                   onClick={() => setOpenModal(true)}
@@ -92,12 +104,11 @@ export const Appbar = () => {
             </div>
           </div>
 
-          {/* Right Auth Buttons */}
           <div className="animate-in fade-in col-span-2 flex flex-row justify-self-end xl:col-span-1">
             {loading ? null : !user ? (
               <div className="flex flex-row">
                 <a
-                  className="bg-base-background-l2  my-auto mr-4 rounded-lg px-2 py-1.5 text-xs font-semibold text-nowrap dark:text-white text-black hover:opacity-90 sm:ml-4 sm:px-3 sm:text-sm"
+                  className="bg-base-background-l2 my-auto mr-4 rounded-lg px-2 py-1.5 text-xs font-semibold text-nowrap dark:text-white text-black hover:opacity-90 sm:ml-4 sm:px-3 sm:text-sm"
                   href="/login"
                 >
                   Log in
@@ -110,29 +121,66 @@ export const Appbar = () => {
                 </a>
               </div>
             ) : (
-              <div className="flex flex-row gap-4">
+              <div className="flex flex-row gap-1">
                 <a
-                  className="my-auto mr-6 rounded-lg bg-base-background-l2 px-2 py-1.5 text-xs font-semibold text-nowrap dark:text-white text-black hover:opacity-90 sm:px-3 sm:text-sm cursor-pointer"
+                  className="my-auto mr-2 rounded-lg bg-base-background-l2 px-2 py-1.5 text-xs font-semibold text-nowrap dark:text-white text-black hover:opacity-90 sm:px-3 sm:text-sm cursor-pointer"
                   href="/balance"
                 >
                   Profile
                 </a>
+
+                <button
+                  className="my-auto mr-2 rounded-lg bg-red-500 px-2 py-1.5 text-xs font-semibold text-nowrap dark:text-white text-black hover:opacity-90 hover:bg-red-600/80 sm:px-3 sm:text-sm cursor-pointer disabled:opacity-60"
+                  onClick={() => setShowLogoutConfirm(true)}
+                  disabled={logoutLoading}
+                >
+                  {logoutLoading ? "Logging out..." : "Logout"}
+                </button>
               </div>
             )}
           </div>
         </div>
       </div>
 
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 dark:bg-black/80 bg-white/80 border-black/10 backdrop-blur-sm flex justify-center items-center z-[300]">
+          <div className="w-[420px] dark:bg-[#0c0c0c] bg-gray-100 rounded-2xl p-5 border dark:border-white/10 border-black/10">
+            <h2 className="text-black dark:text-white text-lg font-semibold mb-2">
+              Confirm Logout
+            </h2>
+            <p className="text-gray-600 dark:text-gray-200 text-sm mb-5">
+              Are you sure you want to log out?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                disabled={logoutLoading}
+                className="rounded-lg bg-[#1a1a1a] px-4 py-2 text-sm text-white hover:opacity-90"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmLogout}
+                disabled={logoutLoading}
+                className="rounded-lg bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600/80 disabled:opacity-60"
+              >
+                {logoutLoading ? "Logging out..." : "OK"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {openModal && (
         <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-start pt-28 z-[200] animate-fadeIn"
+          className="fixed inset-0 dark:bg-black/80 backdrop-blur-sm flex justify-center items-start pt-28 z-[200]"
           onClick={() => setOpenModal(false)}
         >
           <div
-            className="w-[500px] bg-[#0c0c0c] rounded-2xl p-5 shadow-lg border border-white/10"
+            className="w-[500px] bg-[#0c0c0c] rounded-2xl p-5 border border-white/10"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Search Bar Inside Modal */}
             <div className="flex items-center bg-[#1a1a1a] px-3 py-2 rounded-xl border border-white/10 mb-4">
               <CiSearch className="text-slate-400 text-xl mr-2" />
               <input
@@ -140,39 +188,24 @@ export const Appbar = () => {
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 placeholder="Search markets..."
-                className="bg-transparent w-full outline-none text-white placeholder:text-gray-500"
+                className="bg-transparent w-full outline-none text-white"
               />
-              {value && (
-                <button
-                  className="text-gray-400 text-sm px-2"
-                  onClick={() => setValue("")}
-                >
-                  Clear
-                </button>
-              )}
             </div>
 
-            {/* Results */}
             <div className="max-h-[400px] overflow-y-auto space-y-2">
-              {marketToShow.length > 0 ? (
-                marketToShow.map((m: any) => (
-                  <div
-                    key={m.symbol}
-                    onClick={() => {
-                      router.push(`/trade/${m.symbol}`);
-                      setOpenModal(false);
-                    }}
-                    className="flex items-center justify-between px-3 py-2 bg-[#141414] hover:bg-[#1f1f1f] rounded-lg cursor-pointer transition-all"
-                  >
-                    <div className="text-white text-sm">{m.symbol}</div>
-                    <div className="text-gray-400 text-sm">{m.lastPrice}</div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center text-gray-500 py-10">
-                  No markets found.
+              {marketToShow.map((m: any) => (
+                <div
+                  key={m.symbol}
+                  onClick={() => {
+                    router.push(`/trade/${m.symbol}`);
+                    setOpenModal(false);
+                  }}
+                  className="flex justify-between px-3 py-2 bg-[#141414] hover:bg-[#1f1f1f] rounded-lg cursor-pointer"
+                >
+                  <div className="text-white text-sm">{m.symbol}</div>
+                  <div className="text-gray-400 text-sm">{m.lastPrice}</div>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </div>
