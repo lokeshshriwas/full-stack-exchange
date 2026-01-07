@@ -132,16 +132,101 @@ export function SwapUI({
               </div>
 
               <div className="flex justify-center flex-row mt-2 gap-3">
-                <div className="flex items-center justify-center flex-row rounded-full py-1.5 px-2 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3">
+                <div
+                  onClick={() => {
+                    const price =
+                      type === "limit" ? numAmount : Number(ticker?.lastPrice);
+                    if (activeTab === "buy") {
+                      // Buy: use % of USDC to calculate quantity
+                      const usdcBalance = getBalanceForAsset(quoteAsset);
+                      const available = usdcBalance
+                        ? parseFloat(usdcBalance.available)
+                        : 0;
+                      const usdcToUse = available * 0.25;
+                      const qty = price > 0 ? usdcToUse / price : 0;
+                      setQty(qty.toFixed(4));
+                    } else {
+                      // Sell: use % of base asset directly
+                      const baseBalance = getBalanceForAsset(baseAsset);
+                      const available = baseBalance
+                        ? parseFloat(baseBalance.available)
+                        : 0;
+                      setQty((available * 0.25).toFixed(4));
+                    }
+                  }}
+                  className="flex items-center justify-center flex-row rounded-full py-1.5 px-2 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3"
+                >
                   25%
                 </div>
-                <div className="flex items-center justify-center flex-row rounded-full py-1.5 px-2 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3">
+                <div
+                  onClick={() => {
+                    const price =
+                      type === "limit" ? numAmount : Number(ticker?.lastPrice);
+                    if (activeTab === "buy") {
+                      const usdcBalance = getBalanceForAsset(quoteAsset);
+                      const available = usdcBalance
+                        ? parseFloat(usdcBalance.available)
+                        : 0;
+                      const usdcToUse = available * 0.5;
+                      const qty = price > 0 ? usdcToUse / price : 0;
+                      setQty(qty.toFixed(4));
+                    } else {
+                      const baseBalance = getBalanceForAsset(baseAsset);
+                      const available = baseBalance
+                        ? parseFloat(baseBalance.available)
+                        : 0;
+                      setQty((available * 0.5).toFixed(4));
+                    }
+                  }}
+                  className="flex items-center justify-center flex-row rounded-full py-1.5 px-2 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3"
+                >
                   50%
                 </div>
-                <div className="flex items-center justify-center flex-row rounded-full py-1.5 px-2 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3">
+                <div
+                  onClick={() => {
+                    const price =
+                      type === "limit" ? numAmount : Number(ticker?.lastPrice);
+                    if (activeTab === "buy") {
+                      const usdcBalance = getBalanceForAsset(quoteAsset);
+                      const available = usdcBalance
+                        ? parseFloat(usdcBalance.available)
+                        : 0;
+                      const usdcToUse = available * 0.75;
+                      const qty = price > 0 ? usdcToUse / price : 0;
+                      setQty(qty.toFixed(4));
+                    } else {
+                      const baseBalance = getBalanceForAsset(baseAsset);
+                      const available = baseBalance
+                        ? parseFloat(baseBalance.available)
+                        : 0;
+                      setQty((available * 0.75).toFixed(4));
+                    }
+                  }}
+                  className="flex items-center justify-center flex-row rounded-full py-1.5 px-2 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3"
+                >
                   75%
                 </div>
-                <div className="flex items-center justify-center flex-row rounded-full py-1.5 px-2 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3">
+                <div
+                  onClick={() => {
+                    const price =
+                      type === "limit" ? numAmount : Number(ticker?.lastPrice);
+                    if (activeTab === "buy") {
+                      const usdcBalance = getBalanceForAsset(quoteAsset);
+                      const available = usdcBalance
+                        ? parseFloat(usdcBalance.available)
+                        : 0;
+                      const qty = price > 0 ? available / price : 0;
+                      setQty(qty.toFixed(4));
+                    } else {
+                      const baseBalance = getBalanceForAsset(baseAsset);
+                      const available = baseBalance
+                        ? parseFloat(baseBalance.available)
+                        : 0;
+                      setQty(available.toFixed(4));
+                    }
+                  }}
+                  className="flex items-center justify-center flex-row rounded-full py-1.5 px-2 text-xs cursor-pointer bg-base-background-l2 hover:bg-base-background-l3"
+                >
                   Max
                 </div>
               </div>
