@@ -492,6 +492,26 @@ export class Engine {
     this.orderbooks.push(orderbook);
   }
 
+  /**
+   * Create and execute a new order in the matching engine
+   * 
+   * Order Execution Flow (per ARCHITECTURE.md Section 4.2):
+   * 1. Validate market and inputs
+   * 2. Generate unique orderId (26-char random string per ARCHITECTURE.md line 547)
+   * 3. Lock funds atomically via Redis Lua script
+   * 4. Match against orderbook (with self-trade prevention per line 714-753)
+   * 5. Update balances for taker and makers
+   * 6. Persist order and trades to DB queue
+   * 7. Publish WebSocket updates (depth, trades, orders)
+   * 
+   * @param market - Market symbol (e.g., "SOL_USDC")
+   * @param price - Limit price as string
+   * @param quantity - Order quantity as string  
+   * @param side - "buy" or "sell"
+   * @param userId - User ID placing the order
+   * @returns Object with executedQty, fills array, and orderId
+   * @throws Error if insufficient funds or invalid inputs
+   */
   async createOrder(market: string, price: string, quantity: string, side: "buy" | "sell", userId: string) {
     const orderbook = this.orderbooks.find(o => o.ticker() === market);
     const marketConfig = this.getMarketConfig(market);
@@ -603,6 +623,22 @@ export class Engine {
 
   /**
    * Check if user has sufficient funds and lock them using Redis atomic operations
+   * 
+   * Atomicity Guarantee (per ARCHITECTURE.md Section 4.3, lines 837-866):
+   * - Uses Redis Lua script to ensure atomic check-and-lock
+   * - For BUY orders: locks quote asset (e.g., USDC) = quantity * price
+   * - For SELL orders: locks base asset (e.g., SOL) = quantity
+   * - Fails immediately if insufficient funds (newAvailable < 0)
+   * - Balance update is pushed to db_balance_updates queue for DB persistence
+   * 
+   * @param baseAsset - Base asset symbol (e.g., "SOL")
+   * @param quoteAsset - Quote asset symbol (e.g., "USDC")
+   * @param side - "buy" or "sell"
+   * @param userId - User ID
+   * @param price - Order price
+   * @param quantity - Order quantity
+   * @param orderId - Unique order ID for event tracking
+   * @throws Error if insufficient funds
    */
   async checkAndLockFunds(
     baseAsset: string,
@@ -813,6 +849,28 @@ export class Engine {
     });
   }
 
+  /**
+   * Publish order events to user-specific WebSocket channels
+   * 
+   * Event Structure (per ARCHITECTURE.md Section 3, lines 470-536):
+   * 
+   * 1. ORDER_PLACED - Published to taker's channel
+   *    - Channel: open_orders:user:{order.userId}
+   *    - Payload: orderId, executedQty, market, price, quantity, side, status, userId, timestamp
+   *    - Status: "open" | "partial" | "filled" based on executedQty
+   * 
+   * 2. ORDER_FILL - Published to each maker's channel
+   *    - Channel: open_orders:user:{makerUserId}
+   *    - Payload: orderId, filledQty, price, market, side (maker's side), timestamp
+   *    - Grouped by maker to send single notification per maker
+   * 
+   * Frontend subscribes to these channels in Orders.tsx (lines 100-175)
+   * 
+   * @param order - The taker's order
+   * @param executedQty - Total quantity executed
+   * @param fills - Array of fills with maker details
+   * @param market - Market symbol
+   */
   publishWsOrders(order: Order, executedQty: number, fills: Fill[], market: string) {
     // === TAKER UPDATE ===
     let takerStatus: "filled" | "partial" | "open" = "open";

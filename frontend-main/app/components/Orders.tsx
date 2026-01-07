@@ -101,14 +101,26 @@ export const Orders = ({ market }: OrdersProps) => {
         "ORDER_PLACED",
         (data: any) => {
           const payload = data.payload;
-          if (payload.market !== market) return;
+          console.log("[Orders] ORDER_PLACED received:", payload);
+
+          if (payload.market !== market) {
+            console.log("[Orders] Ignoring ORDER_PLACED - wrong market");
+            return;
+          }
 
           // If fully filled, don't add to open - just refetch history
           if (payload.status === "filled") {
+            console.log(
+              "[Orders] ORDER_PLACED status is filled, fetching history and NOT adding to open orders"
+            );
             debouncedFetchHistory();
             return;
           }
 
+          console.log(
+            "[Orders] Adding/updating order in open orders, status:",
+            payload.status
+          );
           setOpenOrders((prev) => {
             const updated: Order = {
               orderId: payload.orderId,
@@ -121,6 +133,12 @@ export const Orders = ({ market }: OrdersProps) => {
             };
 
             const exists = prev.find((o) => o.orderId === payload.orderId);
+            if (exists) {
+              console.log("[Orders] Updating existing order:", payload.orderId);
+            } else {
+              console.log("[Orders] Adding new order:", payload.orderId);
+            }
+
             return exists
               ? prev.map((o) => (o.orderId === payload.orderId ? updated : o))
               : [...prev, updated];
@@ -134,21 +152,39 @@ export const Orders = ({ market }: OrdersProps) => {
         "ORDER_FILL",
         (data: any) => {
           const payload = data.payload;
-          if (payload.market !== market) return;
+          console.log("[Orders] ORDER_FILL received:", payload);
+
+          if (payload.market !== market) {
+            console.log("[Orders] Ignoring ORDER_FILL - wrong market");
+            return;
+          }
 
           setOpenOrders((prev) => {
             const order = prev.find((o) => o.orderId === payload.orderId);
-            if (!order) return prev;
+            if (!order) {
+              console.log(
+                "[Orders] ORDER_FILL: Order not found in open orders:",
+                payload.orderId
+              );
+              return prev;
+            }
 
             const newFilled = order.filled + payload.filledQty;
+            console.log(
+              `[Orders] ORDER_FILL: orderId=${payload.orderId}, oldFilled=${order.filled}, newFilled=${newFilled}, quantity=${order.quantity}`
+            );
 
             // Check if fully filled
             if (newFilled >= parseFloat(order.quantity)) {
+              console.log(
+                "[Orders] ORDER_FILL: Order fully filled, removing from open orders and fetching history"
+              );
               debouncedFetchHistory();
               return prev.filter((o) => o.orderId !== payload.orderId);
             }
 
             // Partial fill - update in place
+            console.log("[Orders] ORDER_FILL: Partial fill, updating order");
             return prev.map((o) =>
               o.orderId === payload.orderId
                 ? { ...o, filled: newFilled, status: "partial" }

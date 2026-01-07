@@ -25,6 +25,7 @@ export function SwapUI({
   const { user, loading } = useUser();
   const {
     getFormattedBalance,
+    getBalanceForAsset, // Add this for validation
     baseAsset,
     quoteAsset,
     loading: balanceLoading,
@@ -162,15 +163,64 @@ export function SwapUI({
 
                     const action = activeTab === "buy" ? "buy" : "sell";
 
-                    const { data } = await makeOrder(
-                      market,
-                      price.toString(),
-                      numQty.toString(),
-                      action,
-                      user.id
-                    );
-                    if (data.error) {
-                      toast.error("Insufficient balance");
+                    // CLIENT-SIDE BALANCE VALIDATION
+                    if (action === "buy") {
+                      // For buy orders, check USDC balance
+                      const requiredAmount = numQty * price;
+                      const usdcBalance = getBalanceForAsset(quoteAsset);
+                      const availableUsdc = usdcBalance
+                        ? parseFloat(usdcBalance.available)
+                        : 0;
+
+                      if (availableUsdc < requiredAmount) {
+                        toast.error(
+                          `Insufficient ${quoteAsset} balance. Required: ${requiredAmount.toFixed(
+                            2
+                          )}, Available: ${availableUsdc.toFixed(2)}`
+                        );
+                        return;
+                      }
+                    } else {
+                      // For sell orders, check base asset balance
+                      const baseBalance = getBalanceForAsset(baseAsset);
+                      const availableBase = baseBalance
+                        ? parseFloat(baseBalance.available)
+                        : 0;
+
+                      if (availableBase < numQty) {
+                        toast.error(
+                          `Insufficient ${baseAsset} balance. Required: ${numQty.toFixed(
+                            4
+                          )}, Available: ${availableBase.toFixed(4)}`
+                        );
+                        return;
+                      }
+                    }
+
+                    // Proceed with order if validation passes
+                    try {
+                      const { data } = await makeOrder(
+                        market,
+                        price.toString(),
+                        numQty.toString(),
+                        action,
+                        user.id
+                      );
+
+                      if (data.error) {
+                        toast.error(data.error || "Order failed");
+                      } else {
+                        toast.success(
+                          `${
+                            action === "buy" ? "Buy" : "Sell"
+                          } order placed successfully`
+                        );
+                      }
+                    } catch (error: any) {
+                      console.error("Order placement error:", error);
+                      toast.error(
+                        error.response?.data?.message || "Failed to place order"
+                      );
                     }
                   }}
                   className={`font-semibold focus:ring-blue-200 text-center h-12 rounded-xl text-base px-4 py-2 my-4 ${

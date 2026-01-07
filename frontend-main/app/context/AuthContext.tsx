@@ -158,11 +158,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const userData = response.data.data.user;
         const accessToken = response.data.data.accessToken;
         const refreshToken = response.data.data.refreshToken;
+        console.log(
+          "access token:",
+          accessToken,
+          "refresh token:",
+          refreshToken
+        );
 
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
 
         // Store accessToken for WebSocket authentication (cross-domain issue workaround)
+
         if (accessToken && refreshToken) {
           localStorage.setItem("accessToken", accessToken);
           localStorage.setItem("refreshToken", refreshToken);
@@ -194,6 +201,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const userData = response.data.data.user;
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("accessToken", response.data.data.accessToken);
+        localStorage.setItem("refreshToken", response.data.data.refreshToken);
       }
     } catch (error) {
       console.error("Register failed", error);
@@ -212,6 +221,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(null);
       localStorage.removeItem("user");
       localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
       router.push("/login");
     }
   };

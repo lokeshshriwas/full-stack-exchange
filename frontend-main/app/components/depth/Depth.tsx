@@ -31,7 +31,6 @@ export function Depth({ market }: { market: string }) {
       (data: any) => {
         setBids((originalBids = []) => {
           let updatedBids = [...originalBids];
-          console.log("bids", data.bids);
           for (const [price, qty] of data.bids) {
             const quantity = Number(qty);
             const existingIndex = updatedBids.findIndex((b) => b[0] === price);
@@ -55,7 +54,6 @@ export function Depth({ market }: { market: string }) {
 
         setAsks((originalAsks = []) => {
           let updatedAsks = [...originalAsks];
-          console.log("asks", data.asks);
           for (const [price, qty] of data.asks) {
             const quantity = Number(qty);
             const existingIndex = updatedAsks.findIndex((b) => b[0] === price);

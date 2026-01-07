@@ -187,7 +187,8 @@ userRouter.post("/login", async (req: Request, res: Response) => {
           email: user.email,
           createdAt: user.created_at,
         },
-        accessToken, // Include token for localStorage (WebSocket auth on different domain)
+        accessToken,
+        refreshToken,
       },
     });
   } catch (error) {

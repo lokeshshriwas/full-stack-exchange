@@ -60,7 +60,6 @@ export class Orderbook {
         }
     }
 
-    //TODO: Add self trade prevention
     addOrder(order: Order): {
         executedQty: number,
         fills: Fill[]
@@ -101,7 +100,9 @@ export class Orderbook {
         let executedQty = 0;
 
         for (let i = 0; i < this.asks.length; i++) {
-            // SELF-TRADE PREVENTION: Skip orders from the same user
+            // SELF-TRADE PREVENTION (per ARCHITECTURE.md Section 4.2, lines 714-753)
+            // Skip orders from the same user to prevent self-trading
+            // The incoming order will rest on the book if no other matching orders exist
             if (this.asks[i].userId === order.userId) {
                 continue;
             }
@@ -151,7 +152,9 @@ export class Orderbook {
         let executedQty = 0;
 
         for (let i = 0; i < this.bids.length; i++) {
-            // SELF-TRADE PREVENTION: Skip orders from the same user
+            // SELF-TRADE PREVENTION (per ARCHITECTURE.md Section 4.2, lines 714-753)
+            // Skip orders from the same user to prevent self-trading  
+            // The incoming order will rest on the book if no other matching orders exist
             if (this.bids[i].userId === order.userId) {
                 continue;
             }

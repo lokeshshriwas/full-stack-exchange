@@ -72,6 +72,9 @@ export class User {
 
       const requestedUserId = parts[2];
 
+      // Debug log for troubleshooting
+      console.log(`[WS] Subscription validation: requested=${requestedUserId}, authenticated=${this.authenticatedUserId}, match=${requestedUserId === this.authenticatedUserId}`);
+
       // Verify user is only subscribing to their own channel
       if (requestedUserId !== this.authenticatedUserId) {
         this.sendError("Unauthorized: Cannot subscribe to another user's channel");
@@ -98,10 +101,11 @@ export class User {
           const refreshToken = parsedMessage.params[1];
 
           try {
-            const decoded = jwt.verify(accessToken, JWT_SECRET) as { userId: string };
+            const decoded = jwt.verify(accessToken, JWT_SECRET) as { userId: number | string };
 
             this.authenticated = true;
-            this.authenticatedUserId = decoded.userId;
+            this.authenticatedUserId = String(decoded.userId); // Convert to string for consistent comparison
+
 
           } catch (accessError) {
             if (!refreshToken) {
@@ -113,10 +117,11 @@ export class User {
               const decodedRefresh = jwt.verify(
                 refreshToken,
                 REFRESH_SECRET
-              ) as { userId: string };
+              ) as { userId: number | string };
 
               this.authenticated = true;
-              this.authenticatedUserId = decodedRefresh.userId;
+              this.authenticatedUserId = String(decodedRefresh.userId); // Convert to string for consistent comparison
+
 
             } catch (refreshError) {
               this.sendError("Invalid authentication token");

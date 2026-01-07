@@ -154,7 +154,6 @@ export class SignalingManager {
 
     this.ws.onmessage = (event) => {
       const message = JSON.parse(event.data);
-      console.log("raw websocket message", message);
 
       // Handle authentication response
       if (message.type === 'auth_success') {
