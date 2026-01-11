@@ -1,16 +1,17 @@
 import { Client } from "pg";
 import { createClient } from "redis";
 import { DbMessage } from "./types";
+import { config } from "./config";
 
 const pgClient = new Client({
-  user: "postgres",
-  host: "localhost",
-  database: "exchange-platform",
-  password: "020802",
-  port: 5432,
+  user: config.postgres.user,
+  host: config.postgres.host,
+  database: config.postgres.database,
+  password: config.postgres.password,
+  port: config.postgres.port,
 });
 
-const redisClient = createClient();
+const redisClient = createClient({ url: config.redis.url });
 
 async function main() {
   await pgClient.connect();

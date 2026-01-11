@@ -6,6 +6,7 @@ import { CANCEL_ORDER, CREATE_ORDER, GET_DEPTH, GET_OPEN_ORDERS, MessageFromApi,
 import { Fill, Order, Orderbook } from "./Orderbook";
 import axios from "axios";
 import { Ticker } from "../types/toApi";
+import { config } from "../config";
 
 export const BASE_CURRENCY = "USDC";
 
@@ -34,11 +35,11 @@ export class Engine {
 
     // Try to load from DB first
     const pgClient = new (require("pg").Client)({
-      user: "postgres",
-      host: "localhost",
-      database: "exchange-platform",
-      password: "020802",
-      port: 5432,
+      user: config.postgres.user,
+      host: config.postgres.host,
+      database: config.postgres.database,
+      password: config.postgres.password,
+      port: config.postgres.port,
     });
 
     try {
@@ -116,7 +117,7 @@ export class Engine {
         // Fallback to snapshot.json
         let snapshot = null;
         try {
-          if (process.env.WITH_SNAPSHOT) {
+          if (config.withSnapshot) {
             snapshot = fs.readFileSync("./snapshot.json");
           }
         } catch (e) {
@@ -151,7 +152,7 @@ export class Engine {
 
   private async initializeSupportedMarkets() {
     try {
-      const fetchMarkets = await axios.get<Ticker[]>("http://localhost:8080/api/v1/tickers");
+      const fetchMarkets = await axios.get<Ticker[]>(config.api.tickersUrl);
       const markets: MarketConfig[] = fetchMarkets.data
         .filter((t: Ticker) => !t.symbol.endsWith("PERP"))
         .map((t: Ticker) => {

@@ -5,6 +5,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { OrderTable } from "./OrderTable";
 import { SignalingManager } from "../utils/SignalingManager";
+import { env } from "../config/env";
 
 interface OrdersProps {
   market: string;
@@ -29,10 +30,9 @@ export const Orders = ({ market }: OrdersProps) => {
   // Fetch order history - can be called from WS callbacks
   const fetchOrderHistory = useCallback(async () => {
     try {
-      const historyRes = await axios.get(
-        `http://localhost:8080/api/v2/order/history`,
-        { withCredentials: true }
-      );
+      const historyRes = await axios.get(`${env.apiV2}/order/history`, {
+        withCredentials: true,
+      });
       setOrderHistory(historyRes.data);
     } catch (err) {
       console.error("[Orders] History fetch failed", err);
@@ -54,7 +54,7 @@ export const Orders = ({ market }: OrdersProps) => {
     const fetchOpenOrders = async () => {
       try {
         const openRes = await axios.get(
-          `http://localhost:8080/api/v2/order/open?market=${market}`,
+          `${env.apiV2}/order/open?market=${market}`,
           { withCredentials: true }
         );
 
@@ -259,7 +259,7 @@ export const Orders = ({ market }: OrdersProps) => {
 
   const handleCancel = async (orderId: string, marketIdx: string) => {
     try {
-      const resp = await axios.delete("http://localhost:8080/api/v2/order", {
+      const resp = await axios.delete(`${env.apiV2}/order`, {
         data: { orderId, market: marketIdx },
         withCredentials: true,
       });

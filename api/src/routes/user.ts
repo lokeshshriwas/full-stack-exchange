@@ -2,19 +2,18 @@ import { Router, Request, Response } from "express";
 import pool from "../db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
+import { config } from "../config";
 import { RedisManager } from "../RedisManager";
 import { ENSURE_USER, ON_RAMP } from "../types";
-dotenv.config();
 
 pool.connect();
 
 export const userRouter = Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || "secret_password";
-const REFRESH_SECRET = process.env.REFRESH_SECRET || "refresh_secret_password";
+const JWT_SECRET = config.auth.jwtSecret;
+const REFRESH_SECRET = config.auth.refreshSecret;
 const SALT_ROUNDS = 10;
-const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const IS_PRODUCTION = config.isProduction;
 
 // Cookie configuration for access token (needs to be accessible by JavaScript for WebSocket auth)
 const getAccessTokenCookieConfig = (maxAge: number) => ({

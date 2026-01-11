@@ -1,10 +1,11 @@
 import axios from "axios";
 import { Depth, KLine, SymbolData, Ticker, Trade } from "./types";
 import { getStartAndEndTime } from "./helper";
+import { env } from "../config/env";
 
-const PROXY_BASE_URL = "http://localhost:8080/api/v1";
-const SPECIAL_BASE_URL = "http://localhost:8080";
-const BASE_URL = "http://localhost:8080/api/v2";
+const PROXY_BASE_URL = env.apiV1;
+const SPECIAL_BASE_URL = env.apiUrl;
+const BASE_URL = env.apiV2;
 
 // Fixed: Returns Ticker[] (array), not Ticker (single object)
 export async function getTickers(): Promise<Ticker[]> {

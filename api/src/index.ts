@@ -1,5 +1,4 @@
-import dotenv from "dotenv";
-dotenv.config();
+import { config } from "./config";
 import express from "express";
 import { createProxyMiddleware } from "http-proxy-middleware";
 const app = express();
@@ -13,7 +12,7 @@ import { userRouter } from "./routes/user";
 import cookieParser from "cookie-parser";
 
 // Replace this with the target server URL
-const targetUrl = process.env.TARGET_URL;
+const targetUrl = config.api.targetUrl;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -46,7 +45,7 @@ app.use(
   })
 );
 
-const port = 8080;
+const port = config.api.port;
 app.listen(port, () => {
   console.log(`Proxy server running on http://localhost:${port}`);
 });

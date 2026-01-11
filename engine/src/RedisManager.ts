@@ -65,7 +65,9 @@ export class RedisManager {
     private static instance: RedisManager;
 
     constructor() {
-        this.client = createClient();
+        // Import config inline to avoid circular dependency
+        const { config } = require("./config");
+        this.client = createClient({ url: config.redis.url });
         this.client.connect();
     }
 

@@ -1,0 +1,39 @@
+# Development overrides for docker-compose
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# This file enables running ONLY infrastructure services (Redis + TimescaleDB)
+# in Docker, while running application services locally with hot reload.
+#
+# Quick start for local development:
+#   docker-compose up redis timescaledb -d
+#   cd api && npm run dev
+#   cd engine && npm run dev
+#   cd ws && npm run dev
+#   cd db && npm run dev
+#   cd frontend-main && npm run dev
+
+version: "3.8"
+
+services:
+  # Disable application services by putting them in a profile
+  # Only Redis and TimescaleDB will start by default
+
+  api:
+    profiles:
+      - full
+
+  engine:
+    profiles:
+      - full
+
+  ws:
+    profiles:
+      - full
+
+  db-worker:
+    profiles:
+      - full
+
+  frontend:
+    profiles:
+      - full

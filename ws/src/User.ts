@@ -3,12 +3,10 @@ import { OutgoingMessage } from "./types/out";
 import { SubscriptionManager } from "./SubscriptionManager";
 import { IncomingMessage, SUBSCRIBE, UNSUBSCRIBE, AUTH } from "./types/in";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
+import { config } from "./config";
 
-dotenv.config();
-
-const JWT_SECRET = process.env.JWT_SECRET || "";
-const REFRESH_SECRET = process.env.REFRESH_SECRET || "refresh_secret_password";
+const JWT_SECRET = config.auth.jwtSecret;
+const REFRESH_SECRET = config.auth.refreshSecret;
 
 export class User {
   private id: string;

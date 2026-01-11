@@ -1,7 +1,8 @@
 import { Ticker } from "./types";
+import { env } from "../config/env";
 
 export const PROXY_URL = "wss://ws.backpack.exchange/";
-export const BASE_URL = "ws://localhost:3001";
+export const BASE_URL = env.wsUrl;
 
 // Helper to get cookie value
 function getCookie(name: string): string | null {

@@ -28,8 +28,9 @@ import AddCryptoModal from "../components/balance/AddCryptoModal";
 import { Balance, Cryptocurrency } from "../utils/types";
 import USDCBalanceCard from "../components/balance/USDCBalanceCard";
 import AssetBalanceCard from "../components/balance/AssetBalanceCard";
+import { env } from "../config/env";
 
-const API_BASE_URL = "http://localhost:8080/api/v2";
+const API_BASE_URL = env.apiV2;
 
 // Available cryptocurrencies list
 export const AVAILABLE_CRYPTOCURRENCIES: Cryptocurrency[] = [

@@ -1,5 +1,6 @@
 import { RedisClientType, createClient } from "redis";
 import { UserManager } from "./UserManager";
+import { config } from "./config";
 
 export class SubscriptionManager {
   private static instance: SubscriptionManager;
@@ -9,12 +10,12 @@ export class SubscriptionManager {
   private redisClientKV: RedisClientType;
 
   private constructor() {
-    this.redisClient = createClient();
+    this.redisClient = createClient({ url: config.redis.url });
     this.redisClient.on("error", (err) => console.log("[WS] Redis Client Error", err));
     this.redisClient.on("connect", () => console.log("[WS] Redis Client Connected"));
     this.redisClient.connect();
 
-    this.redisClientKV = createClient();
+    this.redisClientKV = createClient({ url: config.redis.url });
     this.redisClientKV.on("error", (err) => console.log("[WS] Redis KV Client Error", err));
     this.redisClientKV.on("connect", () => console.log("[WS] Redis KV Client Connected"));
     this.redisClientKV.connect();

@@ -1,6 +1,7 @@
 import axios from "axios";
+import { env } from "../config/env";
 
-export const BASE_URL = "http://localhost:8080";
+export const BASE_URL = env.apiUrl;
 
 export const makeOrder = async (market: string, price: string, quantity: string, side: "buy" | "sell", userId: string) => await axios.post(`${BASE_URL}/api/v2/order`, {
     market,
