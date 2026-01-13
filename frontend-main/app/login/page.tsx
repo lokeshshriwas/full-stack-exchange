@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { FiMail, FiLock } from "react-icons/fi";
 import Header from "../components/maincomps/Header";
 import Input from "../components/maincomps/Input";
@@ -12,7 +12,7 @@ import { useAuth } from "../context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AxiosError } from "axios";
 
-export default function LoginPage() {
+function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -137,5 +137,19 @@ export default function LoginPage() {
       </div>
       <Toaster position="top-center" />
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-base-background flex items-center justify-center">
+          <div className="animate-spin h-8 w-8 border-2 border-white border-t-transparent rounded-full"></div>
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }
