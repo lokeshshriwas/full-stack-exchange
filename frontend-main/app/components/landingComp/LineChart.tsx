@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import React from "react";
 import dynamic from "next/dynamic";
 
@@ -27,21 +27,21 @@ const LineChart = ({ data }: { data: LineChartProps[] }) => {
   };
 
   React.useEffect(() => {
-   if(data?.length){
-       defineColor(data);
-       defineSeriesData(data);
-   }
+    if (data?.length) {
+      defineColor(data);
+      defineSeriesData(data);
+    }
   }, [data]);
 
   const options = {
     chart: {
-      type: "line",
+      type: "line" as const,
       toolbar: { show: false },
       zoom: { enabled: false },
       sparkline: { enabled: true }, // hides grid/axes
     },
     stroke: {
-      curve: "smooth",
+      curve: "smooth" as const,
       width: 2,
     },
     markers: {
@@ -61,7 +61,13 @@ const LineChart = ({ data }: { data: LineChartProps[] }) => {
 
   return (
     <div>
-      <Chart options={options} series={series} type="line" height={50} width={80} />
+      <Chart
+        options={options}
+        series={series}
+        type="line"
+        height={50}
+        width={80}
+      />
     </div>
   );
 };
