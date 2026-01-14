@@ -24,6 +24,7 @@ export const config = {
     api: {
         port: parseInt(process.env.API_PORT || "8080"),
         targetUrl: process.env.TARGET_URL || "https://api.backpack.exchange",
+        corsOrigins: process.env.CORS_ORIGINS?.split(",") || ["http://localhost:3000"],
     },
 
     // Authentication secrets

@@ -67,7 +67,12 @@ export class RedisManager {
     constructor() {
         // Import config inline to avoid circular dependency
         const { config } = require("./config");
-        this.client = createClient({ url: config.redis.url });
+        const redisUrl = config.redis.url;
+        console.log(`[RedisManager] Connecting to Redis at: ${redisUrl}`);
+
+        this.client = createClient({ url: redisUrl });
+        this.client.on('error', (err) => console.error('[RedisManager] Redis Client Error:', err));
+        this.client.on('connect', () => console.log('[RedisManager] Redis Client Connected'));
         this.client.connect();
     }
 

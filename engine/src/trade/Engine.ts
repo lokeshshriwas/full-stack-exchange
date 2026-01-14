@@ -155,6 +155,7 @@ export class Engine {
       const fetchMarkets = await axios.get<Ticker[]>(config.api.tickersUrl);
       const markets: MarketConfig[] = fetchMarkets.data
         .filter((t: Ticker) => !t.symbol.endsWith("PERP"))
+        .filter((t: Ticker) => !t.symbol.endsWith("PREDICTION"))
         .map((t: Ticker) => {
           const [baseAsset, quoteAsset] = t.symbol.split("_");
           return {

@@ -10,7 +10,7 @@ const BASE_URL = env.apiV2;
 // Fixed: Returns Ticker[] (array), not Ticker (single object)
 export async function getTickers(): Promise<Ticker[]> {
   const response = await axios.get(`${PROXY_BASE_URL}/tickers`);
-  return response.data.filter((t: Ticker) => !t.symbol.endsWith("PERP"));
+  return response.data.filter((t: Ticker) => !t.symbol.endsWith("PERP") && !t.symbol.endsWith("PREDICTION"));
 }
 
 export async function getTicker(market: string): Promise<Ticker> {

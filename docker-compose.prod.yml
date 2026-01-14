@@ -1,0 +1,144 @@
+# =============================================================================
+# Production Docker Compose - Exchange Platform Backend
+# =============================================================================
+# This file is designed for EC2 deployment using pre-built Docker Hub images.
+#
+# Services included: Redis, TimescaleDB, API, Engine, WS, DB Worker
+# Services excluded: Frontend (Vercel), MM (dev only)
+#
+# Usage:
+#   1. Copy this file + .env to your EC2 instance
+#   2. Update .env with production values
+#   3. docker compose -f docker-compose.prod.yml pull
+#   4. docker compose -f docker-compose.prod.yml up -d
+# =============================================================================
+
+version: "3.8"
+
+services:
+  # ============================================
+  # Infrastructure Services
+  # ============================================
+
+  redis:
+    image: redis:7-alpine
+    container_name: exchange-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis-data:/data
+    restart: always
+    command: redis-server --appendonly yes
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    container_name: exchange-timescaledb
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-exchange-platform}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-exchange-platform}",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - timescale-data:/var/lib/postgresql/data
+    restart: always
+
+  # ============================================
+  # Application Services (from Docker Hub)
+  # ============================================
+
+  api:
+    image: ${DOCKER_USER}/exchange-api:${IMAGE_TAG:-latest}
+    container_name: exchange-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_HOST=timescaledb
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-exchange-platform}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - API_PORT=8080
+      - TARGET_URL=${TARGET_URL:-https://api.backpack.exchange}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
+      - REFRESH_SECRET=${REFRESH_SECRET:?REFRESH_SECRET is required}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - NODE_ENV=production
+    restart: always
+
+  engine:
+    image: ${DOCKER_USER}/exchange-engine:${IMAGE_TAG:-latest}
+    container_name: exchange-engine
+    depends_on:
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+      api:
+        condition: service_started
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_HOST=timescaledb
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-exchange-platform}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - ENGINE_API_URL=http://api:8080
+      - WITH_SNAPSHOT=${WITH_SNAPSHOT:-false}
+    restart: always
+
+  ws:
+    image: ${DOCKER_USER}/exchange-ws:${IMAGE_TAG:-latest}
+    container_name: exchange-ws
+    ports:
+      - "3001:3001"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - WS_PORT=3001
+      - JWT_SECRET=${JWT_SECRET}
+      - REFRESH_SECRET=${REFRESH_SECRET}
+    restart: always
+
+  db-worker:
+    image: ${DOCKER_USER}/exchange-db-worker:${IMAGE_TAG:-latest}
+    container_name: exchange-db-worker
+    depends_on:
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_HOST=timescaledb
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-exchange-platform}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    restart: always
+
+volumes:
+  redis-data:
+  timescale-data:

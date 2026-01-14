@@ -1,8 +1,15 @@
 import { Ticker } from "./types";
-import { env } from "../config/env";
 
 export const PROXY_URL = "wss://ws.backpack.exchange/";
-export const BASE_URL = env.wsUrl;
+
+// Helper to get WebSocket URL at runtime (browser only)
+function getWsUrl(): string {
+  if (typeof window !== 'undefined') {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${window.location.host}/ws`;
+  }
+  return 'ws://localhost:3001';
+}
 
 // Helper to get cookie value
 function getCookie(name: string): string | null {
@@ -38,8 +45,11 @@ export class SignalingManager {
   private authenticatedUserId: string | null = null;
 
   private constructor() {
+    const wsUrl = getWsUrl();
+    console.log('[SignalingManager] Connecting to custom WS at:', wsUrl);
+
     this.proxyWs = new WebSocket(PROXY_URL);
-    this.ws = new WebSocket(BASE_URL);
+    this.ws = new WebSocket(wsUrl);
     this.proxyBufferedMessages = [];
     this.baseBufferedMessages = [];
     this.id = 1;
@@ -140,7 +150,7 @@ export class SignalingManager {
     };
 
     this.ws.onopen = () => {
-      console.log('[SignalingManager] WebSocket connected to', BASE_URL);
+      console.log('[SignalingManager] WebSocket connected to');
       this.initializedBase = true;
 
       // Send buffered messages

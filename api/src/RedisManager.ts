@@ -2,6 +2,7 @@
 import { RedisClientType, createClient } from "redis";
 import { MessageFromOrderbook } from "./types";
 import { MessageToEngine } from "./types/to";
+import { config } from "./config";
 
 export class RedisManager {
     private client: RedisClientType;
@@ -9,9 +10,12 @@ export class RedisManager {
     private static instance: RedisManager;
 
     private constructor() {
-        this.client = createClient();
+        const redisUrl = config.redis.url;
+        console.log(`[API RedisManager] Connecting to Redis at: ${redisUrl}`);
+
+        this.client = createClient({ url: redisUrl });
         this.client.connect();
-        this.publisher = createClient();
+        this.publisher = createClient({ url: redisUrl });
         this.publisher.connect();
     }
 

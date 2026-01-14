@@ -1,13 +1,16 @@
 import { createClient, } from "redis";
 import { Engine } from "./trade/Engine";
+import { config } from "./config";
 
 
 async function main() {
     const engine = new Engine();
     await engine.init();
-    const redisClient = createClient();
+
+    console.log(`[Engine] Connecting to Redis at: ${config.redis.url}`);
+    const redisClient = createClient({ url: config.redis.url });
     await redisClient.connect();
-    console.log("connected to redis");
+    console.log("[Engine] Connected to Redis");
 
     while (true) {
         const response = await redisClient.rPop("messages" as string)
