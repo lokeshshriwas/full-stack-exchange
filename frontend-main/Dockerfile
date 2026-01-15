@@ -1,5 +1,5 @@
-# Build stage
-FROM node:20-alpine AS builder
+# Build stage - Using slim (Debian-based) instead of Alpine for Turbopack compatibility
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -24,7 +24,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
 
@@ -40,3 +40,4 @@ EXPOSE 3000
 
 # Start the server
 CMD ["node", "server.js"]
+

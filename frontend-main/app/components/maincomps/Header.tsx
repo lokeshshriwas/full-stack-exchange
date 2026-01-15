@@ -1,5 +1,4 @@
 import React from "react";
-import { HiCube } from "react-icons/hi2";
 
 interface HeaderProps {
   title: string;
@@ -11,7 +10,20 @@ const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
     <div className="text-center mb-8">
       <div className="flex justify-center mb-6">
         <div className="w-12 h-12 bg-base-text-high-emphasis rounded-xl flex items-center justify-center">
-          <HiCube className="text-2xl text-base-background" />
+          <img
+            src="/favicon.ico"
+            alt="logo"
+            height={30}
+            width={30}
+            className="block dark:hidden"
+          />
+          <img
+            src="/logo-dark.png"
+            alt="logo"
+            height={30}
+            width={30}
+            className="hidden dark:block"
+          />
         </div>
       </div>
       <h1 className="text-2xl font-semibold text-base-text-high-emphasis tracking-tight">

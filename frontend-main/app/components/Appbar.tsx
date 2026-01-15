@@ -74,7 +74,38 @@ export const Appbar = () => {
               href="/"
               className="focus:none items-center rounded-lg text-center font-semibold hover:opacity-90 focus:ring-blue-200 focus:outline-hidden disabled:opacity-80 disabled:hover:opacity-80 flex flex-col justify-center bg-transparent h-8 text-sm p-0 xs:mr-6 mr-3 ml-4 shrink-0 sm:ml-[21px]"
             >
-              LOGO
+              <div className="flex items-center flex-row gap-1">
+                {/* Dark mode logos */}
+                <img
+                  src="/favicon.ico"
+                  alt="logo"
+                  height={30}
+                  width={30}
+                  className="hidden dark:block"
+                />
+                <img
+                  src="/logo-text.svg"
+                  alt="logo"
+                  height={70}
+                  width={80}
+                  className="hidden dark:block"
+                />
+                {/* Light mode logos */}
+                <img
+                  src="/logo-dark.png"
+                  alt="logo"
+                  height={30}
+                  width={30}
+                  className="block dark:hidden"
+                />
+                <img
+                  src="/logo-text-dark.png"
+                  alt="logo"
+                  height={70}
+                  width={80}
+                  className="block dark:hidden"
+                />
+              </div>
             </a>
 
             <div className="flex items-center justify-center flex-row xs:flex gap-5 sm:mx-4 sm:gap-8">
