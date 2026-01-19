@@ -78,12 +78,12 @@ const MainTable = () => {
 
 const LoadingSkeleton = () => (
   <div className="flex flex-col gap-4 mt-4 animate-pulse">
-    <div className="flex justify-between gap-4">
-      <div className="h-60 bg-gray-200 w-1/3 rounded-xl" />
-      <div className="h-60 bg-gray-200 w-1/3 rounded-xl" />
-      <div className="h-60 bg-gray-200 w-1/3 rounded-xl" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="h-60 bg-gray-200 dark:bg-gray-800 rounded-xl" />
+      <div className="h-60 bg-gray-200 dark:bg-gray-800 rounded-xl hidden sm:block" />
+      <div className="h-60 bg-gray-200 dark:bg-gray-800 rounded-xl hidden md:block" />
     </div>
-    <div className="h-96 bg-gray-200 rounded-xl" />
+    <div className="h-96 bg-gray-200 dark:bg-gray-800 rounded-xl" />
   </div>
 );
 

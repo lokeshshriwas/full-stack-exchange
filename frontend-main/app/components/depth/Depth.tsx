@@ -171,7 +171,7 @@ export function Depth({ market }: { market: string }) {
   }, [market]);
 
   return (
-    <div className="h-screen">
+    <div className="h-full overflow-y-auto">
       <DepthHeader
         onClick={(depth: string) => ChangeDepth(depth)}
         activeDepth={activeDepth}

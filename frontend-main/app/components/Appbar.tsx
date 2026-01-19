@@ -25,7 +25,7 @@ export const Appbar = () => {
       const data = await getTickers();
       const filtered = data.filter((m: any) => !m.symbol.endsWith("PERP"));
       const sorted = filtered.sort(
-        (a: any, b: any) => b.lastPrice - a.lastPrice
+        (a: any, b: any) => b.lastPrice - a.lastPrice,
       );
       setMarkets(sorted);
       setMarketToShow(sorted);
@@ -39,7 +39,7 @@ export const Appbar = () => {
       return;
     }
     const filtered = markets.filter((m: any) =>
-      m.symbol.toLowerCase().includes(value.toLowerCase())
+      m.symbol.toLowerCase().includes(value.toLowerCase()),
     );
     setMarketToShow(filtered);
   }, [value, markets]);
@@ -174,8 +174,8 @@ export const Appbar = () => {
       </div>
 
       {showLogoutConfirm && (
-        <div className="fixed inset-0 dark:bg-black/80 bg-white/80 border-black/10 backdrop-blur-sm flex justify-center items-center z-[300]">
-          <div className="w-[420px] dark:bg-[#0c0c0c] bg-gray-100 rounded-2xl p-5 border dark:border-white/10 border-black/10">
+        <div className="fixed inset-0 dark:bg-black/80 bg-white/80 border-black/10 backdrop-blur-sm flex justify-center items-center z-[300] px-4">
+          <div className="w-full max-w-[420px] dark:bg-[#0c0c0c] bg-gray-100 rounded-2xl p-4 sm:p-5 border dark:border-white/10 border-black/10">
             <h2 className="text-black dark:text-white text-lg font-semibold mb-2">
               Confirm Logout
             </h2>
@@ -205,11 +205,11 @@ export const Appbar = () => {
 
       {openModal && (
         <div
-          className="fixed inset-0 dark:bg-black/80 backdrop-blur-sm flex justify-center items-start pt-28 z-[200]"
+          className="fixed inset-0 dark:bg-black/80 backdrop-blur-sm flex justify-center items-start pt-16 sm:pt-28 z-[200] px-4"
           onClick={() => setOpenModal(false)}
         >
           <div
-            className="w-[500px] bg-[#0c0c0c] rounded-2xl p-5 border border-white/10"
+            className="w-full max-w-[500px] bg-[#0c0c0c] rounded-2xl p-4 sm:p-5 border border-white/10"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center bg-[#1a1a1a] px-3 py-2 rounded-xl border border-white/10 mb-4">

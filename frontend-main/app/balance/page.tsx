@@ -329,25 +329,25 @@ export default function BalancePage() {
       />
 
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {/* Header */}
-        <div className="flex items-center justify-between mb-10">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 rounded-full bg-base-background-l2 text-base-text-high-emphasis flex items-center justify-center">
-              <FaWallet className="text-2xl" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 sm:mb-10">
+          <div className="flex items-center gap-4 sm:gap-5">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-base-background-l2 text-base-text-high-emphasis flex items-center justify-center">
+              <FaWallet className="text-xl sm:text-2xl" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-base-text-high-emphasis">
+              <h1 className="text-2xl sm:text-3xl font-bold text-base-text-high-emphasis">
                 Wallet
               </h1>
-              <p className="text-base-text-med-emphasis">
+              <p className="text-base-text-med-emphasis text-sm sm:text-base">
                 Manage your trading balance
               </p>
             </div>
           </div>
           <button
             onClick={() => openAddModal()}
-            className="flex items-center gap-2 bg-base-text-high-emphasis dark:text-black text-white font-bold px-6 py-3 rounded-lg hover:opacity-90 transition-all"
+            className="flex items-center gap-2 bg-base-text-high-emphasis dark:text-black text-white font-bold px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:opacity-90 transition-all w-full sm:w-auto justify-center"
           >
             <FaPlus />
             Add Crypto
@@ -355,22 +355,22 @@ export default function BalancePage() {
         </div>
 
         {/* User Profile Section */}
-        <div className="mb-8 border border-base-border-light rounded-xl p-6 bg-gradient-to-r from-base-background-l2 to-base-background-l1 relative overflow-hidden">
+        <div className="mb-6 sm:mb-8 border border-base-border-light rounded-xl p-4 sm:p-6 bg-gradient-to-r from-base-background-l2 to-base-background-l1 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 pointer-events-none"></div>
-          <div className="relative flex items-center gap-5">
+          <div className="relative flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-5">
             {/* Avatar */}
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-2 border-base-border-light flex items-center justify-center overflow-hidden">
-              <FaUserCircle className="text-5xl text-base-text-med-emphasis" />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-2 border-base-border-light flex items-center justify-center overflow-hidden">
+              <FaUserCircle className="text-4xl sm:text-5xl text-base-text-med-emphasis" />
             </div>
             {/* User Info */}
-            <div className="flex flex-col gap-1">
-              <h2 className="text-2xl font-bold text-base-text-high-emphasis">
+            <div className="flex flex-col gap-1 text-center sm:text-left">
+              <h2 className="text-xl sm:text-2xl font-bold text-base-text-high-emphasis">
                 {user?.fullName || user?.email?.split("@")[0] || "Trader"}
               </h2>
-              <p className="text-base-text-med-emphasis text-sm">
+              <p className="text-base-text-med-emphasis text-xs sm:text-sm">
                 {user?.email || "demo@exchange.com"}
               </p>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
                   <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>
                   Active
@@ -384,15 +384,15 @@ export default function BalancePage() {
         </div>
 
         {/* Demo Banner */}
-        <div className="border border-base-border-light rounded-xl p-4 mb-8 flex items-center gap-4 bg-base-background-l2">
-          <div className="w-10 h-10 rounded-full border border-base-border-med flex items-center justify-center shrink-0">
-            <FaCoins className="text-base-text-med-emphasis" />
+        <div className="border border-base-border-light rounded-xl p-3 sm:p-4 mb-6 sm:mb-8 flex items-center gap-3 sm:gap-4 bg-base-background-l2">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-base-border-med flex items-center justify-center shrink-0">
+            <FaCoins className="text-base-text-med-emphasis text-sm sm:text-base" />
           </div>
           <div>
-            <p className="text-base-text-high-emphasis font-medium">
+            <p className="text-base-text-high-emphasis font-medium text-sm sm:text-base">
               Paper Trading Mode
             </p>
-            <p className="text-base-text-med-emphasis text-sm">
+            <p className="text-base-text-med-emphasis text-xs sm:text-sm">
               Add any cryptocurrency to your wallet. Use USDC to buy other
               cryptocurrencies or add them directly.
             </p>
@@ -400,7 +400,7 @@ export default function BalancePage() {
         </div>
 
         {/* USDC Balance Card */}
-        <div className="mb-10">
+        <div className="mb-8 sm:mb-10">
           <USDCBalanceCard
             balance={usdcBalance}
             onAddClick={() => openAddModal("USDC")}
@@ -434,20 +434,20 @@ export default function BalancePage() {
 
         {/* Empty State for Holdings */}
         {otherBalances.length === 0 && (
-          <div className="border border-base-border-light rounded-xl p-10 text-center">
-            <div className="w-16 h-16 rounded-full border border-base-border-light flex items-center justify-center mx-auto mb-4">
-              <HiMiniArrowsRightLeft className="text-2xl text-base-text-med-emphasis" />
+          <div className="border border-base-border-light rounded-xl p-6 sm:p-10 text-center">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border border-base-border-light flex items-center justify-center mx-auto mb-4">
+              <HiMiniArrowsRightLeft className="text-xl sm:text-2xl text-base-text-med-emphasis" />
             </div>
-            <h3 className="text-base-text-high-emphasis font-bold text-lg mb-2">
+            <h3 className="text-base-text-high-emphasis font-bold text-base sm:text-lg mb-2">
               No Holdings Yet
             </h3>
-            <p className="text-base-text-med-emphasis text-sm mb-6">
+            <p className="text-base-text-med-emphasis text-xs sm:text-sm mb-6">
               Start trading to acquire other cryptocurrencies or add them
               directly
             </p>
             <button
               onClick={() => openAddModal()}
-              className="inline-flex items-center gap-2 bg-base-text-high-emphasis dark:text-black text-white font-bold px-6 py-3 rounded-lg hover:opacity-90 transition-all"
+              className="inline-flex items-center gap-2 bg-base-text-high-emphasis dark:text-black text-white font-bold px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:opacity-90 transition-all w-full sm:w-auto justify-center"
             >
               <FaPlus />
               Add Cryptocurrency
@@ -456,11 +456,11 @@ export default function BalancePage() {
         )}
 
         {/* How It Works */}
-        <div className="mt-14 border border-base-border-light rounded-xl p-8">
-          <h3 className="text-base-text-high-emphasis font-bold text-lg mb-6">
+        <div className="mt-10 sm:mt-14 border border-base-border-light rounded-xl p-4 sm:p-8">
+          <h3 className="text-base-text-high-emphasis font-bold text-base sm:text-lg mb-4 sm:mb-6">
             How It Works
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             <div className="flex gap-4">
               <div className="w-10 h-10 rounded-full bg-base-background-l2 flex items-center justify-center text-base-text-high-emphasis font-bold shrink-0">
                 1

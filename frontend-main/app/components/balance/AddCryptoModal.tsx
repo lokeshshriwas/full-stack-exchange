@@ -1,8 +1,14 @@
-"use client"
+"use client";
 import { AVAILABLE_CRYPTOCURRENCIES, getCryptoInfo } from "@/app/balance/page";
 import { Balance, Cryptocurrency } from "@/app/utils/types";
 import { useEffect, useState } from "react";
-import { FaArrowLeft, FaCoins, FaPlus, FaSearch, FaSpinner } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaCoins,
+  FaPlus,
+  FaSearch,
+  FaSpinner,
+} from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 
 const AddCryptoModal = ({
@@ -21,7 +27,9 @@ const AddCryptoModal = ({
   preSelectedSymbol?: string;
 }) => {
   const [step, setStep] = useState<"select" | "amount">("select");
-  const [selectedCrypto, setSelectedCrypto] = useState<Cryptocurrency | null>(null);
+  const [selectedCrypto, setSelectedCrypto] = useState<Cryptocurrency | null>(
+    null,
+  );
   const [amount, setAmount] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -80,7 +88,7 @@ const AddCryptoModal = ({
   const filteredCryptos = AVAILABLE_CRYPTOCURRENCIES.filter(
     (crypto) =>
       crypto.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      crypto.name.toLowerCase().includes(searchQuery.toLowerCase())
+      crypto.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Quick amounts based on crypto type
@@ -103,29 +111,32 @@ const AddCryptoModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 dark:bg-black bg-white" onClick={handleClose} />
+      <div
+        className="absolute inset-0 dark:bg-black bg-white"
+        onClick={handleClose}
+      />
 
       {/* Modal */}
       <div
-        className="relative bg-base-background border border-base-border-light rounded-2xl w-full max-w-lg max-h-[90vh]  overflow-y-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative bg-base-background border border-base-border-light rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ animation: "scaleIn 0.2s ease-out" }}
       >
         {step === "select" ? (
           // Step 1: Select Cryptocurrency
           <>
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-base-border-light">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-base-background-l2 border border-base-border-light flex items-center justify-center">
-                  <FaCoins className="text-xl text-base-text-high-emphasis" />
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-base-border-light">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-base-background-l2 border border-base-border-light flex items-center justify-center">
+                  <FaCoins className="text-lg sm:text-xl text-base-text-high-emphasis" />
                 </div>
                 <div>
-                  <h2 className="text-base-text-high-emphasis text-xl font-bold">
+                  <h2 className="text-base-text-high-emphasis text-lg sm:text-xl font-bold">
                     Add Cryptocurrency
                   </h2>
-                  <p className="text-base-text-med-emphasis text-sm">
+                  <p className="text-base-text-med-emphasis text-xs sm:text-sm">
                     Select asset to add
                   </p>
                 </div>
@@ -181,7 +192,9 @@ const AddCryptoModal = ({
                           {currentBalance > 0
                             ? currentBalance.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
-                                maximumFractionDigits: crypto.isStablecoin ? 2 : 8,
+                                maximumFractionDigits: crypto.isStablecoin
+                                  ? 2
+                                  : 8,
                               })
                             : "0.00"}
                         </p>
@@ -246,14 +259,14 @@ const AddCryptoModal = ({
                 </p>
                 <p className="text-base-text-high-emphasis font-mono font-bold text-2xl">
                   {selectedCrypto?.isStablecoin && "$"}
-                  {getCurrentBalance(selectedCrypto?.symbol || "").toLocaleString(
-                    undefined,
-                    {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: selectedCrypto?.isStablecoin ? 2 : 8,
-                    }
-                  )}
-                  {!selectedCrypto?.isStablecoin && ` ${selectedCrypto?.symbol}`}
+                  {getCurrentBalance(
+                    selectedCrypto?.symbol || "",
+                  ).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: selectedCrypto?.isStablecoin ? 2 : 8,
+                  })}
+                  {!selectedCrypto?.isStablecoin &&
+                    ` ${selectedCrypto?.symbol}`}
                 </p>
               </div>
 
@@ -292,7 +305,7 @@ const AddCryptoModal = ({
                   <label className="block text-base-text-high-emphasis text-sm font-medium mb-3">
                     Quick Select
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                     {selectedCrypto &&
                       getQuickAmounts(selectedCrypto).map((quickAmount) => (
                         <button
@@ -354,7 +367,7 @@ const AddCryptoModal = ({
                       Add{" "}
                       {amount
                         ? `${selectedCrypto?.isStablecoin ? "$" : ""}${parseFloat(
-                            amount
+                            amount,
                           ).toLocaleString()}`
                         : "0"}{" "}
                       {selectedCrypto?.symbol}

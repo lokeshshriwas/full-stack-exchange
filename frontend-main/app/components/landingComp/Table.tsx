@@ -3,7 +3,9 @@ import React from "react";
 import LineChart from "./LineChart";
 
 const Table = ({ tableData }: { tableData: any }) => {
-  const sortedTableData = tableData.sort((a: any, b: any) => b.lastPrice - a.lastPrice);
+  const sortedTableData = tableData.sort(
+    (a: any, b: any) => b.lastPrice - a.lastPrice,
+  );
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full">
@@ -19,7 +21,7 @@ const Table = ({ tableData }: { tableData: any }) => {
                 Price
               </div>
             </th>
-            <th className="border-b border-base-border-light w-[17%] px-1 py-3 text-xs font-normal text-med-emphasis first:pl-2 last:pr-6">
+            <th className="border-b border-base-border-light w-[17%] px-1 py-3 text-xs font-normal text-med-emphasis first:pl-2 last:pr-6 hidden sm:table-cell">
               <div className="flex flex-row items-center px-1 first:pl-0 cursor-pointer select-none justify-end text-right">
                 24h Volume
               </div>
@@ -29,7 +31,7 @@ const Table = ({ tableData }: { tableData: any }) => {
                 24h Change
               </div>
             </th>
-            <th className="border-b border-base-border-light w-[17%] px-1 py-3 text-xs font-normal text-med-emphasis first:pl-2 last:pr-6">
+            <th className="border-b border-base-border-light w-[17%] px-1 py-3 text-xs font-normal text-med-emphasis first:pl-2 last:pr-6 hidden md:table-cell">
               <div className="flex flex-row items-center px-1 first:pl-0 cursor-pointer select-none justify-end text-right">
                 Last 7 Days
               </div>
@@ -41,7 +43,10 @@ const Table = ({ tableData }: { tableData: any }) => {
           {sortedTableData
             ?.filter((item: any) => !item.symbol.endsWith("PERP"))
             .map((item: any) => (
-              <tr className="group hover:bg-base-background-l2 cursor-pointer"  key={item?.symbol}>
+              <tr
+                className="group hover:bg-base-background-l2 cursor-pointer"
+                key={item?.symbol}
+              >
                 <td className="text-sm tabular-nums px-2 py-3 last:pr-7">
                   <a
                     className="flex shrink whitespace-nowrap"
@@ -56,9 +61,9 @@ const Table = ({ tableData }: { tableData: any }) => {
                           height="32"
                           decoding="async"
                           className="text-transparent"
-                          src={`https://backpack.exchange/_next/image?url=%2Fcoins%2F${
-                            trimString(item?.symbol)
-                          }.png&w=64&q=95`}
+                          src={`https://backpack.exchange/_next/image?url=%2Fcoins%2F${trimString(
+                            item?.symbol,
+                          )}.png&w=64&q=95`}
                         />
                       </div>
                       <div className="flex flex-col">
@@ -78,19 +83,21 @@ const Table = ({ tableData }: { tableData: any }) => {
                     {item?.lastPrice}
                   </p>
                 </td>
-                <td className="text-sm tabular-nums px-2 py-3 last:pr-7 text-right">
+                <td className="text-sm tabular-nums px-2 py-3 last:pr-7 text-right hidden sm:table-cell">
                   <p className="text-sm font-medium tabular-nums">
                     {formatNumber(item?.volume)}
                   </p>
                 </td>
                 <td className="text-sm tabular-nums px-2 py-3 last:pr-7 text-right">
-                  <p className={`text-sm font-medium tabular-nums text-red-text ${(item?.priceChangePercent * 100) < 0 ? "text-red-500" : "text-green-500"}`}>
+                  <p
+                    className={`text-sm font-medium tabular-nums text-red-text ${item?.priceChangePercent * 100 < 0 ? "text-red-500" : "text-green-500"}`}
+                  >
                     {(item?.priceChangePercent * 100).toFixed(2)}%
                   </p>
                 </td>
-                <td className="text-sm tabular-nums px-2 py-3 last:pr-7 text-right">
+                <td className="text-sm tabular-nums px-2 py-3 last:pr-7 text-right hidden md:table-cell">
                   <div className="flex justify-end">
-                      <LineChart data={item?.klines[0].data} />
+                    <LineChart data={item?.klines[0].data} />
                   </div>
                 </td>
               </tr>

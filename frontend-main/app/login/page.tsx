@@ -74,7 +74,7 @@ function LoginContent() {
   return (
     <div className="min-h-screen bg-base-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-base-background p-8 rounded-2xl border border-base-border-light shadow-xl">
+        <div className="bg-base-background p-5 sm:p-8 rounded-2xl border border-base-border-light shadow-xl">
           <Header
             title="Welcome back"
             subtitle="Sign in to your account to continue"

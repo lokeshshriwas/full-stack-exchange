@@ -54,23 +54,25 @@ export const MarketBar = ({
   return (
     <div>
       <div className="flex items-center flex-row relative w-full overflow-hidden border-b border-slate-800">
-        <div className="flex items-center justify-between flex-row no-scrollbar overflow-auto pr-4">
+        <div className="flex items-center justify-between flex-row no-scrollbar overflow-x-auto pr-4">
           <Ticker market={market} />
-          <div className="flex items-center flex-row space-x-8 pl-4">
+          <div className="flex items-center flex-row space-x-4 sm:space-x-6 lg:space-x-8 pl-4">
             <div className="flex flex-col h-full justify-center">
               <p
-                className={`font-medium tabular-nums text-green-text text-md text-green-500`}
+                className={`font-medium tabular-nums text-green-text text-sm sm:text-md text-green-500`}
               >
                 ${ticker?.lastPrice}
               </p>
-              <p className="font-medium text-sm tabular-nums">
+              <p className="font-medium text-xs sm:text-sm tabular-nums">
                 ${ticker?.lastPrice}
               </p>
             </div>
-            <div className="flex flex-col">
-              <p className={`font-medium text-slate-400 text-sm`}>24H Change</p>
+            <div className="flex flex-col whitespace-nowrap">
+              <p className={`font-medium text-slate-400 text-xs sm:text-sm`}>
+                24H Change
+              </p>
               <p
-                className={` font-medium tabular-nums leading-5 text-sm text-green-text ${
+                className={` font-medium tabular-nums leading-5 text-xs sm:text-sm text-green-text ${
                   Number(ticker?.priceChange) > 0
                     ? "text-green-500"
                     : "text-red-500"
@@ -81,26 +83,32 @@ export const MarketBar = ({
                 {Number(ticker?.priceChangePercent)?.toFixed(2)}%
               </p>
             </div>
-            <div className="flex flex-col">
-              <p className="font-medium text-slate-400 text-sm">24H High</p>
-              <p className="font-medium tabular-nums leading-5 text-sm ">
+            <div className="flex flex-col whitespace-nowrap">
+              <p className="font-medium text-slate-400 text-xs sm:text-sm">
+                24H High
+              </p>
+              <p className="font-medium tabular-nums leading-5 text-xs sm:text-sm ">
                 {ticker?.high}
               </p>
             </div>
-            <div className="flex flex-col">
-              <p className="font-medium text-slate-400 text-sm">24H Low</p>
-              <p className=" font-medium tabular-nums leading-5 text-sm ">
+            <div className="flex flex-col whitespace-nowrap">
+              <p className="font-medium text-slate-400 text-xs sm:text-sm">
+                24H Low
+              </p>
+              <p className=" font-medium tabular-nums leading-5 text-xs sm:text-sm ">
                 {ticker?.low}
               </p>
             </div>
             <button
               type="button"
-              className="font-medium transition-opacity hover:opacity-80 hover:cursor-pointer text-base text-left"
+              className="font-medium transition-opacity hover:opacity-80 hover:cursor-pointer text-base text-left whitespace-nowrap"
               data-rac=""
             >
               <div className="flex flex-col">
-                <p className="font-medium late-400 text-sm">24H Volume</p>
-                <p className="mt-1 font-medium tabular-nums leading-5 text-sm ">
+                <p className="font-medium late-400 text-xs sm:text-sm">
+                  24H Volume
+                </p>
+                <p className="mt-1 font-medium tabular-nums leading-5 text-xs sm:text-sm ">
                   {ticker?.volume}
                 </p>
               </div>
@@ -123,7 +131,7 @@ function Ticker({ market }: { market: string }) {
           data-nimg="1"
           className="z-10 rounded-full h-6 w-6 mt-4 outline-base-background-l1"
           src={`https://backpack.exchange/_next/image?url=%2Fcoins%2F${trimString(
-            market
+            market,
           )}.png&w=64&q=95`}
         />
         <img

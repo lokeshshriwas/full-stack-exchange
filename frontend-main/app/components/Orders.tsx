@@ -252,7 +252,7 @@ export const Orders = ({ market }: OrdersProps) => {
       <div className="flex border-b border-zinc-800">
         <button
           onClick={() => setActiveTab("open")}
-          className={`px-6 py-3 text-sm font-medium ${
+          className={`px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium ${
             activeTab === "open"
               ? "text-blue-500 border-b-2 border-blue-500"
               : "dark:text-zinc-400 text-black dark:hover:text-white hover:text-zinc-600"
@@ -262,7 +262,7 @@ export const Orders = ({ market }: OrdersProps) => {
         </button>
         <button
           onClick={() => setActiveTab("history")}
-          className={`px-6 py-3 text-sm font-medium ${
+          className={`px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium ${
             activeTab === "history"
               ? "text-blue-500 border-b-2 border-blue-500"
               : "dark:text-zinc-400 text-black dark:hover:text-white hover:text-zinc-600"
