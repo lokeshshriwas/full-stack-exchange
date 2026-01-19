@@ -123,7 +123,7 @@ export class RedisManager {
         lockedChange: number,
         eventType: "trade" | "order_place" | "cancel" | "deposit",
         eventId: string
-    ): Promise<boolean> {
+    ): Promise<{ available: number; locked: number } | null> {
         const key = `balances:${userId}:${asset}`;
         const queueKey = "db_balance_updates";
         const script = `
@@ -179,7 +179,17 @@ export class RedisManager {
                     Date.now().toString()
                 ]
             });
-            return result !== null;
+
+            if (result === null || result === undefined) {
+                return null;
+            }
+
+            // Result is [newAvailable, newLocked] from Lua script
+            const balances = result as [number, number];
+            return {
+                available: Number(balances[0]),
+                locked: Number(balances[1])
+            };
         } catch (e) {
             console.error("Redis Lua Error:", e);
             throw e;

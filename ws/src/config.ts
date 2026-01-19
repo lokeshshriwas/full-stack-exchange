@@ -18,7 +18,7 @@ export const config = {
 
     // Authentication secrets
     auth: {
-        jwtSecret: process.env.JWT_SECRET || "",
+        jwtSecret: process.env.JWT_SECRET || "password_password",
         refreshSecret: process.env.REFRESH_SECRET || "refresh_secret_password",
     },
 };

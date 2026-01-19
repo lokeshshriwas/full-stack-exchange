@@ -1,8 +1,37 @@
 # ARCHITECTURE.md - Real-Time Trading Platform Internal Documentation
 
-**Version:** 1.2  
-**Last Updated:** 2026-01-07  
+**Version:** 1.3  
+**Last Updated:** 2026-01-20  
 **Classification:** Internal Engineering Reference
+
+---
+
+## Changelog (2026-01-20)
+
+### Balance Synchronization Fix
+
+- **Issue**: Adding balance via balance page caused doubling on refresh
+- **Root Cause**: API updated DB first, then sent ON_RAMP to engine which also added to Redis
+- **Fix**: Engine's ON_RAMP handler now uses `syncBalance()` to sync Redis with DB without double-counting
+- **Files**: `engine/src/trade/Engine.ts`
+
+### Orderbook & Trades Persistence Fix
+
+- **Issue**: Order book depth and trades sometimes not showing after page refresh
+- **Root Cause**: Initial snapshots were merged with state instead of replacing it
+- **Fix**:
+  - Added `isSnapshot: true` flag to WS snapshot messages
+  - Frontend now fully replaces state on snapshot, merges on incremental updates
+- **Files**: `ws/src/SubscriptionManager.ts`, `frontend-main/app/components/depth/Depth.tsx`
+
+### Production WebSocket Reliability Fix
+
+- **Issue**: Open orders not closing instantly in production builds
+- **Root Cause**: WebSocket `readyState` not checked before sending messages
+- **Fix**:
+  - Added `readyState === WebSocket.OPEN` checks before sending
+  - Added SSR guard to `getInstance()` method
+- **Files**: `frontend-main/app/utils/SignalingManager.ts`
 
 ---
 
@@ -342,6 +371,50 @@ getDepth() {
 
 2. **Atomic Redis Operations**: Balance updates use Lua scripts for atomicity:
 
+#### `updateBalance(userId, asset, availableChange, lockedChange, eventType, eventId)`
+
+**Purpose**: Atomically update user balance in Redis and queue for DB persistence
+
+**Returns**: `Promise<{available: number, locked: number} | null>`
+
+- Returns new balance values on success
+- Returns `null` on failure (insufficient funds)
+
+**Atomicity**: Uses Lua script to ensure:
+
+- Check current balance
+- Calculate new balance
+- Fail if `newAvailable < 0` or `newLocked < 0`
+- Update Redis hash
+- Queue DB update
+- Return new balance values
+
+**Usage**:
+
+```typescript
+const newBalance = await RedisManager.getInstance().updateBalance(
+  userId,
+  "USDC",
+  -100, // available -= 100
+  100, // locked += 100
+  "order_place",
+  orderId,
+);
+
+if (newBalance) {
+  // Success: balance updated
+  engine.publishWsBalance(
+    userId,
+    "USDC",
+    newBalance.available,
+    newBalance.locked,
+  );
+} else {
+  // Failure: insufficient funds
+  throw new Error("Insufficient balance");
+}
+```
+
 ```lua
 -- From engine/src/RedisManager.ts updateBalance()
 local currentAvailable = tonumber(redis.call("HGET", key, "available") or "0")
@@ -443,7 +516,7 @@ if (parsedMessage.method === AUTH) {
       JSON.stringify({
         type: "auth_success",
         userId: this.authenticatedUserId,
-      })
+      }),
     );
   } catch (accessError) {
     // Fallback to refresh token if access token expired
@@ -556,6 +629,80 @@ Published from `Engine.publishWsOrders()` to notify MAKERS when their orders are
   }
 }
 ```
+
+#### 3.5. **ORDER_FILL**
+
+**Published to**: `open_orders:user:{makerUserId}` (maker's channel)
+
+**Trigger**: When a maker's resting order is matched (partially or fully)
+
+**Payload**:
+
+```typescript
+{
+  type: "ORDER_FILL",
+  payload: {
+    orderId: string,      // Maker's order ID
+    filledQty: number,    // Quantity filled in this event
+    price: string,        // Fill price
+    market: string,       // e.g., "BTC_USDC"
+    side: "buy" | "sell", // Maker's side
+    timestamp: number
+  }
+}
+```
+
+**Frontend Handler**: `Orders.tsx` listens for fills to update order history
+
+---
+
+#### 3.6. **BALANCE_UPDATE** ⭐ NEW
+
+**Published to**: `balances:user:{userId}` (user-specific channel)
+
+**Trigger**: After every balance change in Redis:
+
+- Order placement (funds locked)
+- Order fills (funds transferred)
+- Order cancellation (funds unlocked)
+- Deposits (on-ramp)
+
+**Payload**:
+
+```typescript
+{
+  type: "BALANCE_UPDATE",
+  payload: {
+    asset: string,        // e.g., "USDC", "BTC", "SOL"
+    available: string,    // New available balance (8 decimals)
+    locked: string,       // New locked balance (8 decimals)
+    timestamp: number
+  }
+}
+```
+
+**Purpose**: Real-time balance updates without polling or optimistic calculations
+
+**Flow**:
+
+1. Engine updates balance in Redis via `RedisManager.updateBalance()`
+2. `updateBalance` returns new `{available, locked}` values
+3. Engine calls `publishWsBalance()` with new values
+4. Message published to Redis channel `balances:user:{userId}`
+5. WS server forwards to subscribed frontend clients
+6. `useBalance` hook updates UI instantly
+
+**Frontend Handler**: `useBalance.ts` listens and updates balance state
+
+**Channel Subscription**:
+
+- Frontend subscribes: `balances:user:{userId}`
+- WS validates user can only subscribe to their own balance
+- No other users can see your balance updates
+
+---
+
+### 3.7. **Balance Update Architecture**
 
 ### Why WebSocket Over Polling
 
@@ -852,8 +999,8 @@ const takerStatus =
   executedQty === numericQuantity
     ? "filled"
     : executedQty > 0
-    ? "partial"
-    : "open";
+      ? "partial"
+      : "open";
 this.persistOrderToDb(
   orderId,
   userId,
@@ -862,7 +1009,7 @@ this.persistOrderToDb(
   quantity,
   side,
   executedQty,
-  takerStatus
+  takerStatus,
 );
 
 // 2. Persist MAKER order updates (incremental fills)
@@ -1144,11 +1291,11 @@ setInterval(() => {
     // Save to Redis for WS clients
     RedisManager.getInstance().set(
       `orderbook_snapshot:${o.ticker()}`,
-      JSON.stringify(o.getSnapshot())
+      JSON.stringify(o.getSnapshot()),
     );
     RedisManager.getInstance().set(
       `depth_snapshot:${o.ticker()}`,
-      JSON.stringify(o.getDepth())
+      JSON.stringify(o.getDepth()),
     );
 
     // Push to DB queue
@@ -1216,19 +1363,19 @@ if (snapshots.length > 0) {
       s.asks,
       s.last_trade_id,
       0,
-      s.market.split("_")[1] // quoteAsset
+      s.market.split("_")[1], // quoteAsset
     );
     this.orderbooks.push(orderbook);
   });
 
   // Reload recent trades into Redis
   const recentTradesResult = await pgClient.query(
-    "SELECT market, trade_json FROM recent_trades ORDER BY created_at ASC"
+    "SELECT market, trade_json FROM recent_trades ORDER BY created_at ASC",
   );
   for (const row of recentTradesResult.rows) {
     await RedisManager.getInstance().pushToQueue(
       `trades_snapshot:${row.market}`,
-      JSON.stringify(tradePayload)
+      JSON.stringify(tradePayload),
     );
   }
 }
@@ -1522,17 +1669,14 @@ ws.on("close", () => {
 **Current Design Choices**:
 
 1. **Async DB writes**: Prioritizes engine latency over durability
-
    - Pro: Order execution in <5ms
    - Con: 100ms+ delay for DB persistence
 
 2. **Redis balance as source of truth during operation**:
-
    - Pro: Sub-ms balance checks
    - Con: Requires reconciliation with DB
 
 3. **No distributed transactions**:
-
    - Pro: Simplicity, speed
    - Con: Possible inconsistency on failures
 
@@ -1545,15 +1689,12 @@ ws.on("close", () => {
 **Current Bottlenecks**:
 
 1. **Single Engine Process**: All orders go through one Node.js process
-
    - Mitigation: Vertical scaling, or shard by market
 
 2. **Redis Single Instance**: All state in one Redis
-
    - Mitigation: Redis Cluster, or separate Redis per market
 
 3. **Orderbook Array Operations**: O(n) matching
-
    - Mitigation: Sorted data structures (heap, balanced tree)
 
 4. **WS Gateway Single Process**: All connections on one server

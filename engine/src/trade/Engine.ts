@@ -6,7 +6,6 @@ import { CANCEL_ORDER, CREATE_ORDER, GET_DEPTH, GET_OPEN_ORDERS, MessageFromApi,
 import { Fill, Order, Orderbook } from "./Orderbook";
 import axios from "axios";
 import { Ticker } from "../types/toApi";
-import { config } from "../config";
 
 export const BASE_CURRENCY = "USDC";
 
@@ -35,11 +34,11 @@ export class Engine {
 
     // Try to load from DB first
     const pgClient = new (require("pg").Client)({
-      user: config.postgres.user,
-      host: config.postgres.host,
-      database: config.postgres.database,
-      password: config.postgres.password,
-      port: config.postgres.port,
+      user: "postgres",
+      host: "localhost",
+      database: "exchange-platform",
+      password: "020802",
+      port: 5432,
     });
 
     try {
@@ -117,7 +116,7 @@ export class Engine {
         // Fallback to snapshot.json
         let snapshot = null;
         try {
-          if (config.withSnapshot) {
+          if (process.env.WITH_SNAPSHOT) {
             snapshot = fs.readFileSync("./snapshot.json");
           }
         } catch (e) {
@@ -152,10 +151,9 @@ export class Engine {
 
   private async initializeSupportedMarkets() {
     try {
-      const fetchMarkets = await axios.get<Ticker[]>(config.api.tickersUrl);
+      const fetchMarkets = await axios.get<Ticker[]>("http://localhost:8080/api/v1/tickers");
       const markets: MarketConfig[] = fetchMarkets.data
         .filter((t: Ticker) => !t.symbol.endsWith("PERP"))
-        .filter((t: Ticker) => !t.symbol.endsWith("PREDICTION"))
         .map((t: Ticker) => {
           const [baseAsset, quoteAsset] = t.symbol.split("_");
           return {
@@ -313,44 +311,52 @@ export class Engine {
             throw new Error("No order found");
           }
 
+          const remainingQty = order.quantity - order.filled;
+          const { baseAsset, quoteAsset } = marketConfig;
+
+          // Unlock funds
           if (order.side === "buy") {
             const price = cancelOrderbook.cancelBid(order);
-            const remainingQty = order.quantity - order.filled;
-            const amountToUnlock = remainingQty * order.price;
-
-            // Unlock: locked -= amount, available += amount
-            await RedisManager.getInstance().updateBalance(
+            // For buy orders, unlock quote asset (USDC)
+            const lockedAmount = remainingQty * Number(order.price);
+            const newBalance = await RedisManager.getInstance().updateBalance(
               order.userId,
-              marketConfig.quoteAsset,
-              amountToUnlock,
-              -amountToUnlock,
+              quoteAsset,
+              lockedAmount,
+              -lockedAmount,
               "cancel",
               orderId
             );
+
+            // Publish real-time balance update
+            if (newBalance) {
+              this.publishWsBalance(order.userId, quoteAsset, newBalance.available, newBalance.locked);
+            }
 
             if (price) {
               this.sendUpdatedDepthAt(price.toString(), cancelMarket);
             }
           } else {
             const price = cancelOrderbook.cancelAsk(order);
-            const remainingQty = order.quantity - order.filled;
-
-            // Unlock: locked -= amount, available += amount
-            await RedisManager.getInstance().updateBalance(
+            // For sell orders, unlock base asset (BTC/SOL)
+            const newBalance = await RedisManager.getInstance().updateBalance(
               order.userId,
-              marketConfig.baseAsset,
+              baseAsset,
               remainingQty,
               -remainingQty,
               "cancel",
               orderId
             );
 
+            // Publish real-time balance update
+            if (newBalance) {
+              this.publishWsBalance(order.userId, baseAsset, newBalance.available, newBalance.locked);
+            }
+
             if (price) {
               this.sendUpdatedDepthAt(price.toString(), cancelMarket);
             }
           }
-
-          const remainingQty = order.quantity - order.filled;
 
           RedisManager.getInstance().sendToApi(clientId, {
             type: "ORDER_CANCELLED",
@@ -434,15 +440,30 @@ export class Engine {
         break;
 
       case ON_RAMP:
-        const userId = message.data.userId;
-        const amount = Number(message.data.amount);
-        const asset = message.data.asset || BASE_CURRENCY;
+        // DB is already updated by the API before this message is sent.
+        // Use syncBalance to add the deposited amount to Redis WITHOUT double-counting.
+        // syncBalance adds to Redis only if Redis < DB total.
+        const onRampUserId = message.data.userId;
+        const onRampAmount = Number(message.data.amount);
+        const onRampAsset = message.data.asset || BASE_CURRENCY;
 
-        // Deposit: available += amount
-        await RedisManager.getInstance().updateBalance(
-          userId, asset, amount, 0, "deposit", Math.random().toString() // Generate unique ID for deposit
+        // Get current Redis balance and add the deposit amount
+        const currentBalance = await RedisManager.getInstance().getBalance(onRampUserId, onRampAsset);
+        const newTotal = currentBalance.available + currentBalance.locked + onRampAmount;
+
+        // Sync Redis to have the new total (DB already has it)
+        // Pass newTotal as available + existing locked to preserve locked funds
+        await RedisManager.getInstance().syncBalance(
+          onRampUserId,
+          onRampAsset,
+          newTotal,              // New available = old total + deposit
+          currentBalance.locked  // Preserve existing locked balance
         );
-        console.log(`[Engine] User ${userId} on-ramped ${amount} ${asset}`);
+
+        // Publish balance update via WebSocket for real-time UI update
+        this.publishWsBalance(onRampUserId, onRampAsset, newTotal, currentBalance.locked);
+
+        console.log(`[Engine] ON_RAMP: User ${onRampUserId} deposited ${onRampAmount} ${onRampAsset}. New total: ${newTotal}`);
         break;
 
       case GET_DEPTH:
@@ -494,26 +515,6 @@ export class Engine {
     this.orderbooks.push(orderbook);
   }
 
-  /**
-   * Create and execute a new order in the matching engine
-   * 
-   * Order Execution Flow (per ARCHITECTURE.md Section 4.2):
-   * 1. Validate market and inputs
-   * 2. Generate unique orderId (26-char random string per ARCHITECTURE.md line 547)
-   * 3. Lock funds atomically via Redis Lua script
-   * 4. Match against orderbook (with self-trade prevention per line 714-753)
-   * 5. Update balances for taker and makers
-   * 6. Persist order and trades to DB queue
-   * 7. Publish WebSocket updates (depth, trades, orders)
-   * 
-   * @param market - Market symbol (e.g., "SOL_USDC")
-   * @param price - Limit price as string
-   * @param quantity - Order quantity as string  
-   * @param side - "buy" or "sell"
-   * @param userId - User ID placing the order
-   * @returns Object with executedQty, fills array, and orderId
-   * @throws Error if insufficient funds or invalid inputs
-   */
   async createOrder(market: string, price: string, quantity: string, side: "buy" | "sell", userId: string) {
     const orderbook = this.orderbooks.find(o => o.ticker() === market);
     const marketConfig = this.getMarketConfig(market);
@@ -625,22 +626,6 @@ export class Engine {
 
   /**
    * Check if user has sufficient funds and lock them using Redis atomic operations
-   * 
-   * Atomicity Guarantee (per ARCHITECTURE.md Section 4.3, lines 837-866):
-   * - Uses Redis Lua script to ensure atomic check-and-lock
-   * - For BUY orders: locks quote asset (e.g., USDC) = quantity * price
-   * - For SELL orders: locks base asset (e.g., SOL) = quantity
-   * - Fails immediately if insufficient funds (newAvailable < 0)
-   * - Balance update is pushed to db_balance_updates queue for DB persistence
-   * 
-   * @param baseAsset - Base asset symbol (e.g., "SOL")
-   * @param quoteAsset - Quote asset symbol (e.g., "USDC")
-   * @param side - "buy" or "sell"
-   * @param userId - User ID
-   * @param price - Order price
-   * @param quantity - Order quantity
-   * @param orderId - Unique order ID for event tracking
-   * @throws Error if insufficient funds
    */
   async checkAndLockFunds(
     baseAsset: string,
@@ -656,7 +641,7 @@ export class Engine {
       const requiredAmount = quantity * price;
 
       // Update Balance: available -= required, locked += required
-      const success = await RedisManager.getInstance().updateBalance(
+      const newBalance = await RedisManager.getInstance().updateBalance(
         userId,
         quoteAsset,
         -requiredAmount,
@@ -665,17 +650,20 @@ export class Engine {
         orderId
       );
 
-      if (!success) {
+      if (!newBalance) {
         throw new Error(
           `Insufficient ${quoteAsset} funds. Required: ${requiredAmount.toFixed(8)}`
         );
       }
 
+      // Publish real-time balance update via WebSocket
+      this.publishWsBalance(userId, quoteAsset, newBalance.available, newBalance.locked);
+
       console.log(`[Lock] User ${userId}: Locked ${requiredAmount} ${quoteAsset} for buy order`);
     } else {
       // For sell orders, lock base asset (e.g., BTC)
       // Update Balance: available -= quantity, locked += quantity
-      const success = await RedisManager.getInstance().updateBalance(
+      const newBalance = await RedisManager.getInstance().updateBalance(
         userId,
         baseAsset,
         -quantity,
@@ -684,11 +672,14 @@ export class Engine {
         orderId
       );
 
-      if (!success) {
+      if (!newBalance) {
         throw new Error(
           `Insufficient ${baseAsset} funds. Required: ${quantity.toFixed(8)}`
         );
       }
+
+      // Publish real-time balance update via WebSocket
+      this.publishWsBalance(userId, baseAsset, newBalance.available, newBalance.locked);
 
       console.log(`[Lock] User ${userId}: Locked ${quantity} ${baseAsset} for sell order`);
     }
@@ -726,26 +717,38 @@ export class Engine {
           takerQuoteAvailableChange += priceImprovement;
         }
 
-        await RedisManager.getInstance().updateBalance(
+        // Taker quote balance update (unlock USDC, return change if price improvement)
+        const takerQuoteBalance = await RedisManager.getInstance().updateBalance(
           userId, quoteAsset, takerQuoteAvailableChange, takerQuoteLockedChange, "trade", fill.tradeId.toString()
         );
-        await RedisManager.getInstance().updateBalance(
+        if (takerQuoteBalance) {
+          this.publishWsBalance(userId, quoteAsset, takerQuoteBalance.available, takerQuoteBalance.locked);
+        }
+
+        // Taker base balance update (receive BTC/SOL)
+        const takerBaseBalance = await RedisManager.getInstance().updateBalance(
           userId, baseAsset, fillQty, 0, "trade", fill.tradeId.toString()
         );
-
-        // Order updates for partial fills are handled by publishWsOrders()
-        // No need to publish ORDER_UPDATE separately here
+        if (takerBaseBalance) {
+          this.publishWsBalance(userId, baseAsset, takerBaseBalance.available, takerBaseBalance.locked);
+        }
 
         // === MAKER (seller - otherUserId) ===
-        await RedisManager.getInstance().updateBalance(
+        // Maker quote balance update (receive USDC)
+        const makerQuoteBalance = await RedisManager.getInstance().updateBalance(
           fill.otherUserId, quoteAsset, fillValue, 0, "trade", fill.tradeId.toString()
         );
-        await RedisManager.getInstance().updateBalance(
+        if (makerQuoteBalance) {
+          this.publishWsBalance(fill.otherUserId, quoteAsset, makerQuoteBalance.available, makerQuoteBalance.locked);
+        }
+
+        // Maker base balance update (unlock BTC/SOL)
+        const makerBaseBalance = await RedisManager.getInstance().updateBalance(
           fill.otherUserId, baseAsset, 0, -fillQty, "trade", fill.tradeId.toString()
         );
-
-        // Order updates for partial fills are handled by publishWsOrders()
-        // No need to publish ORDER_UPDATE separately here
+        if (makerBaseBalance) {
+          this.publishWsBalance(fill.otherUserId, baseAsset, makerBaseBalance.available, makerBaseBalance.locked);
+        }
 
         console.log(`[Fill] BUY: Taker ${userId} bought ${fillQty} ${baseAsset} @ ${fillPrice} from Maker ${fill.otherUserId}`);
       }
@@ -757,26 +760,38 @@ export class Engine {
         const fillValue = fillQty * fillPrice;
 
         // === TAKER (seller - userId) ===
-        await RedisManager.getInstance().updateBalance(
+        // Taker base balance update (unlock BTC/SOL)
+        const takerBaseBalance = await RedisManager.getInstance().updateBalance(
           userId, baseAsset, 0, -fillQty, "trade", fill.tradeId.toString()
         );
-        await RedisManager.getInstance().updateBalance(
+        if (takerBaseBalance) {
+          this.publishWsBalance(userId, baseAsset, takerBaseBalance.available, takerBaseBalance.locked);
+        }
+
+        // Taker quote balance update (receive USDC)
+        const takerQuoteBalance = await RedisManager.getInstance().updateBalance(
           userId, quoteAsset, fillValue, 0, "trade", fill.tradeId.toString()
         );
-
-        // Order updates for partial fills are handled by publishWsOrders()
-        // No need to publish ORDER_UPDATE separately here
+        if (takerQuoteBalance) {
+          this.publishWsBalance(userId, quoteAsset, takerQuoteBalance.available, takerQuoteBalance.locked);
+        }
 
         // === MAKER (buyer - otherUserId) ===
-        await RedisManager.getInstance().updateBalance(
+        // Maker quote balance update (unlock USDC)
+        const makerQuoteBalance = await RedisManager.getInstance().updateBalance(
           fill.otherUserId, quoteAsset, 0, -fillValue, "trade", fill.tradeId.toString()
         );
-        await RedisManager.getInstance().updateBalance(
+        if (makerQuoteBalance) {
+          this.publishWsBalance(fill.otherUserId, quoteAsset, makerQuoteBalance.available, makerQuoteBalance.locked);
+        }
+
+        // Maker base balance update (receive BTC/SOL)
+        const makerBaseBalance = await RedisManager.getInstance().updateBalance(
           fill.otherUserId, baseAsset, fillQty, 0, "trade", fill.tradeId.toString()
         );
-
-        // Order updates for partial fills are handled by publishWsOrders()
-        // No need to publish ORDER_UPDATE separately here
+        if (makerBaseBalance) {
+          this.publishWsBalance(fill.otherUserId, baseAsset, makerBaseBalance.available, makerBaseBalance.locked);
+        }
 
         console.log(`[Fill] SELL: Taker ${userId} sold ${fillQty} ${baseAsset} @ ${fillPrice} to Maker ${fill.otherUserId}`);
       }
@@ -851,28 +866,6 @@ export class Engine {
     });
   }
 
-  /**
-   * Publish order events to user-specific WebSocket channels
-   * 
-   * Event Structure (per ARCHITECTURE.md Section 3, lines 470-536):
-   * 
-   * 1. ORDER_PLACED - Published to taker's channel
-   *    - Channel: open_orders:user:{order.userId}
-   *    - Payload: orderId, executedQty, market, price, quantity, side, status, userId, timestamp
-   *    - Status: "open" | "partial" | "filled" based on executedQty
-   * 
-   * 2. ORDER_FILL - Published to each maker's channel
-   *    - Channel: open_orders:user:{makerUserId}
-   *    - Payload: orderId, filledQty, price, market, side (maker's side), timestamp
-   *    - Grouped by maker to send single notification per maker
-   * 
-   * Frontend subscribes to these channels in Orders.tsx (lines 100-175)
-   * 
-   * @param order - The taker's order
-   * @param executedQty - Total quantity executed
-   * @param fills - Array of fills with maker details
-   * @param market - Market symbol
-   */
   publishWsOrders(order: Order, executedQty: number, fills: Fill[], market: string) {
     // === TAKER UPDATE ===
     let takerStatus: "filled" | "partial" | "open" = "open";
@@ -940,6 +933,27 @@ export class Engine {
       RedisManager.getInstance().publishMessage(`open_orders:user:${makerUserId}`, makerOrderData);
       console.log(`[Engine] Published ORDER_FILL to maker ${makerUserId} for order ${fillData.orderId}`);
     }
+  }
+
+  /**
+   * Publish balance update via WebSocket
+   * Called after every balance change to notify frontend in real-time
+   */
+  publishWsBalance(userId: string, asset: string, available: number, locked: number) {
+    const payload = {
+      stream: `balances:user:${userId}`,
+      data: {
+        type: "BALANCE_UPDATE" as const,
+        payload: {
+          asset,
+          available: available.toFixed(8),
+          locked: locked.toFixed(8),
+          timestamp: Date.now()
+        }
+      }
+    };
+    RedisManager.getInstance().publishMessage(`balances:user:${userId}`, payload);
+    console.log(`[Engine] BALANCE_UPDATE: user=${userId} asset=${asset} avail=${available.toFixed(8)} locked=${locked.toFixed(8)}`);
   }
 
   sendUpdatedDepthAt(price: string, market: string) {

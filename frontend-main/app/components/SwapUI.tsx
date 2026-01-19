@@ -16,7 +16,7 @@ export function SwapUI({
   ticker: Ticker | null;
 }) {
   const [amount, setAmount] = useState<string>(
-    ticker?.lastPrice?.toString() ?? "1"
+    ticker?.lastPrice?.toString() ?? "1",
   );
   const [qty, setQty] = useState<string>("1");
   const [activeTab, setActiveTab] = useState("buy");
@@ -115,7 +115,7 @@ export function SwapUI({
                   <div className="relative">
                     <img
                       src={`https://backpack.exchange/_next/image?url=%2Fcoins%2F${trimString(
-                        market
+                        market,
                       )}.png&w=64&q=95`}
                       className="w-6 h-6"
                     />
@@ -260,8 +260,8 @@ export function SwapUI({
                       if (availableUsdc < requiredAmount) {
                         toast.error(
                           `Insufficient ${quoteAsset} balance. Required: ${requiredAmount.toFixed(
-                            2
-                          )}, Available: ${availableUsdc.toFixed(2)}`
+                            2,
+                          )}, Available: ${availableUsdc.toFixed(2)}`,
                         );
                         return;
                       }
@@ -275,8 +275,8 @@ export function SwapUI({
                       if (availableBase < numQty) {
                         toast.error(
                           `Insufficient ${baseAsset} balance. Required: ${numQty.toFixed(
-                            4
-                          )}, Available: ${availableBase.toFixed(4)}`
+                            4,
+                          )}, Available: ${availableBase.toFixed(4)}`,
                         );
                         return;
                       }
@@ -289,7 +289,7 @@ export function SwapUI({
                         price.toString(),
                         numQty.toString(),
                         action,
-                        user.id
+                        user.id,
                       );
 
                       if (data.error) {
@@ -298,13 +298,14 @@ export function SwapUI({
                         toast.success(
                           `${
                             action === "buy" ? "Buy" : "Sell"
-                          } order placed successfully`
+                          } order placed successfully`,
                         );
                       }
                     } catch (error: any) {
                       console.error("Order placement error:", error);
                       toast.error(
-                        error.response?.data?.message || "Failed to place order"
+                        error.response?.data?.message ||
+                          "Failed to place order",
                       );
                     }
                   }}
@@ -323,27 +324,6 @@ export function SwapUI({
                   Sign up to trade
                 </button>
               )}
-            </div>
-
-            <div className="flex justify-between flex-row mt-1">
-              <div className="flex flex-row gap-2">
-                <div className="flex items-center">
-                  <input
-                    className="form-checkbox rounded border border-solid border-base-border-med bg-base-950 cursor-pointer h-5 w-5"
-                    id="postOnly"
-                    type="checkbox"
-                  />
-                  <label className="ml-2 text-xs">Post Only</label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    className="form-checkbox rounded border border-solid border-base-border-med bg-base-950 cursor-pointer h-5 w-5"
-                    id="ioc"
-                    type="checkbox"
-                  />
-                  <label className="ml-2 text-xs">IOC</label>
-                </div>
-              </div>
             </div>
           </div>
         </div>

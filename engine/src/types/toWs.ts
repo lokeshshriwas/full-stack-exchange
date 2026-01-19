@@ -99,5 +99,19 @@ export type OrderFillMessage = {
     }
 }
 
-export type WsMessage = TickerUpdateMessage | DepthUpdateMessage | TradeAddedMessage | OrderPlacedMessage | OrderUpdateMessage | OrderCancelledMessage | OrderFillMessage;
+export type BalanceUpdateMessage = {
+    stream: string,
+    data: {
+        type: "BALANCE_UPDATE",
+        payload: {
+            asset: string,
+            available: string,
+            locked: string,
+            timestamp: number
+        }
+    }
+}
+
+export type WsMessage = TickerUpdateMessage | DepthUpdateMessage | TradeAddedMessage | OrderPlacedMessage | OrderUpdateMessage | OrderCancelledMessage | OrderFillMessage | BalanceUpdateMessage;
+
 

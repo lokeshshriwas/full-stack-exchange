@@ -29,6 +29,21 @@ export function Depth({ market }: { market: string }) {
     SignalingManager.getInstance().registerCallback(
       "depth",
       (data: any) => {
+        // If this is a snapshot, replace entire state
+        if (data.isSnapshot) {
+          console.log(
+            "[Depth] Received depth snapshot:",
+            data.bids?.length,
+            "bids,",
+            data.asks?.length,
+            "asks",
+          );
+          setBids(data.bids || []);
+          setAsks(data.asks || []);
+          return;
+        }
+
+        // Incremental update - merge with existing state
         setBids((originalBids = []) => {
           let updatedBids = [...originalBids];
           for (const [price, qty] of data.bids) {
@@ -76,7 +91,7 @@ export function Depth({ market }: { market: string }) {
           return updatedAsks;
         });
       },
-      `depth@${market}`
+      `depth@${market}`,
     );
 
     // Subscribe to the trade channel
@@ -84,13 +99,21 @@ export function Depth({ market }: { market: string }) {
       "trade",
       (data: any) => {
         setTrades((originalTrades = []) => {
+          // Handle snapshot - array of trades for initial load
           if (Array.isArray(data)) {
+            console.log(
+              "[Depth] Received trades snapshot:",
+              data.length,
+              "trades",
+            );
             return data;
           }
+
+          // Single trade update - merge with existing
           let updatedTrades = [...originalTrades];
 
           const existingIndex = updatedTrades.findIndex(
-            (t) => t.id === data.id
+            (t) => t.id === data.id,
           );
 
           if (existingIndex !== -1) {
@@ -107,7 +130,7 @@ export function Depth({ market }: { market: string }) {
           return updatedTrades;
         });
       },
-      `trade@${market}`
+      `trade@${market}`,
     );
 
     // Accessing pre-subscribed price data from ticker channel
@@ -115,7 +138,7 @@ export function Depth({ market }: { market: string }) {
       "ticker",
       (data: Partial<Ticker>) =>
         setPrice((prevPrice) => data?.lastPrice ?? prevPrice ?? ""),
-      `ticker@${market}`
+      `ticker@${market}`,
     );
 
     SignalingManager.getInstance().sendMessage({
@@ -134,7 +157,7 @@ export function Depth({ market }: { market: string }) {
       });
       SignalingManager.getInstance().deRegisterCallback(
         "depth",
-        `depth@${market}`
+        `depth@${market}`,
       );
       SignalingManager.getInstance().sendMessage({
         method: "UNSUBSCRIBE",
@@ -142,7 +165,7 @@ export function Depth({ market }: { market: string }) {
       });
       SignalingManager.getInstance().deRegisterCallback(
         "trade",
-        `trade@${market}`
+        `trade@${market}`,
       );
     };
   }, [market]);

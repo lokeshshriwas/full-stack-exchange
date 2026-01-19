@@ -5,7 +5,6 @@ import React, { useState, Suspense } from "react";
 import { FiMail, FiLock, FiUser } from "react-icons/fi";
 import Header from "../components/maincomps/Header";
 import Input from "../components/maincomps/Input";
-import Checkbox from "../components/maincomps/Checkbox";
 import Button from "../components/maincomps/Button";
 import PasswordStrength from "../components/maincomps/PasswordStrength";
 import toast, { Toaster } from "react-hot-toast";
@@ -26,7 +25,6 @@ interface FormErrors {
   email?: string;
   password?: string;
   confirmPassword?: string;
-  terms?: string;
 }
 
 function RegisterForm() {
@@ -36,8 +34,6 @@ function RegisterForm() {
     password: "",
     confirmPassword: "",
   });
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const [subscribeNewsletter, setSubscribeNewsletter] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -81,9 +77,7 @@ function RegisterForm() {
       newErrors.confirmPassword = "Passwords do not match";
     }
 
-    if (!agreeToTerms) {
-      newErrors.terms = "You must agree to the terms and conditions";
-    }
+    // Terms checkbox removed - no validation needed
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -99,7 +93,11 @@ function RegisterForm() {
     try {
       await register(formData.fullName, formData.email, formData.password);
       toast.success("Registration successful!");
-      router.push(redirectTo);
+
+      // Small delay to ensure toast displays before navigation (critical in production)
+      setTimeout(() => {
+        router.push(redirectTo);
+      }, 800);
     } catch (error) {
       if (error instanceof AxiosError) {
         const message = error.response?.data?.message || "Registration failed";
@@ -172,38 +170,6 @@ function RegisterForm() {
         icon={<FiLock />}
         disabled={isSubmitting}
       />
-
-      <div className="space-y-3 pt-2 mt-4">
-        <Checkbox
-          label={
-            <span>
-              I agree to the{" "}
-              <Link
-                href="/terms"
-                className="text-base-text-high-emphasis hover:underline"
-              >
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link
-                href="/privacy"
-                className="text-base-text-high-emphasis hover:underline"
-              >
-                Privacy Policy
-              </Link>
-            </span>
-          }
-          checked={agreeToTerms}
-          onChange={setAgreeToTerms}
-          error={errors.terms}
-        />
-
-        <Checkbox
-          label="Send me product updates and newsletters"
-          checked={subscribeNewsletter}
-          onChange={setSubscribeNewsletter}
-        />
-      </div>
 
       <div className="pt-2 mt-4">
         <Button

@@ -1,33 +1,20 @@
 import { Ticker } from "./types";
+import { env } from "../config/env";
 
 export const PROXY_URL = "wss://ws.backpack.exchange/";
-
-// Helper to get WebSocket URL at runtime (browser only)
-function getWsUrl(): string {
-  if (typeof window !== 'undefined') {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${protocol}//${window.location.host}/ws`;
-  }
-  return 'ws://localhost:3001';
-}
 
 // Helper to get cookie value
 function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
-
-  console.log('[getCookie] All cookies:', document.cookie);
-  console.log('[getCookie] Looking for:', name);
 
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
 
   if (parts.length === 2) {
     const cookieValue = parts.pop()?.split(';').shift() || null;
-    console.log('[getCookie] Found cookie:', name, '=', cookieValue);
     return cookieValue;
   }
 
-  console.log('[getCookie] Cookie not found:', name);
   return null;
 }
 
@@ -45,7 +32,8 @@ export class SignalingManager {
   private authenticatedUserId: string | null = null;
 
   private constructor() {
-    const wsUrl = getWsUrl();
+    // env.wsUrl is now a getter that evaluates at runtime (fixed in env.ts)
+    const wsUrl = env.wsUrl;
     console.log('[SignalingManager] Connecting to custom WS at:', wsUrl);
 
     this.proxyWs = new WebSocket(PROXY_URL);
@@ -57,6 +45,10 @@ export class SignalingManager {
   }
 
   public static getInstance() {
+    // SSR guard - WebSocket is not available on server
+    if (typeof window === 'undefined') {
+      throw new Error('SignalingManager can only be used in browser environment');
+    }
     if (!this.instance) {
       this.instance = new SignalingManager();
     }
@@ -78,11 +70,8 @@ export class SignalingManager {
     const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
 
     if (!accessToken && !refreshToken) {
-      console.warn('[SignalingManager] No accessToken or refreshToken in localStorage, skipping authentication');
       return;
     }
-
-    console.log('[SignalingManager] Authenticating with JWT from localStorage');
 
     const authMessage = {
       method: 'AUTH',
@@ -145,12 +134,10 @@ export class SignalingManager {
     };
 
     this.proxyWs.onclose = () => {
-      console.log("Proxy WebSocket closed");
       this.initializedProxy = false;
     };
 
     this.ws.onopen = () => {
-      console.log('[SignalingManager] WebSocket connected to');
       this.initializedBase = true;
 
       // Send buffered messages
@@ -170,7 +157,6 @@ export class SignalingManager {
       if (message.type === 'auth_success') {
         this.authenticated = true;
         this.authenticatedUserId = message.userId;
-        console.log('[SignalingManager] Authentication successful, userId:', this.authenticatedUserId);
 
         // Trigger auth callback if registered
         if (this.callbacks['auth_success']) {
@@ -183,7 +169,6 @@ export class SignalingManager {
 
       // Handle error messages
       if (message.type === 'error') {
-        console.error('[SignalingManager] WebSocket error:', message.message);
         if (this.callbacks['error']) {
           this.callbacks['error'].forEach(({ callback }: any) => {
             callback(message);
@@ -226,7 +211,7 @@ export class SignalingManager {
             }
           }
           // Handle open orders messages (taker and maker notifications)
-          if (type === "ORDER_PLACED" || type === "ORDER_CANCELLED" || type === "ORDER_FILL") {
+          if (type === "ORDER_PLACED" || type === "ORDER_CANCELLED" || type === "ORDER_FILL" || type === "BALANCE_UPDATE") {
             callback(message.data);
           }
         });
@@ -238,7 +223,6 @@ export class SignalingManager {
     };
 
     this.ws.onclose = () => {
-      console.log("Base WebSocket closed");
       this.initializedBase = false;
       this.authenticated = false;
       this.authenticatedUserId = null;
@@ -258,13 +242,15 @@ export class SignalingManager {
         messageToSend.params[0].startsWith("kline."));
 
     if (isProxyMessage) {
-      if (!this.initializedProxy) {
+      // Check both initialized flag AND WebSocket readyState for production reliability
+      if (!this.initializedProxy || !this.proxyWs || this.proxyWs.readyState !== WebSocket.OPEN) {
         this.proxyBufferedMessages.push(messageToSend);
         return;
       }
       this.proxyWs.send(JSON.stringify(messageToSend));
     } else {
-      if (!this.initializedBase) {
+      // Check both initialized flag AND WebSocket readyState for production reliability
+      if (!this.initializedBase || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
         this.baseBufferedMessages.push(messageToSend);
         return;
       }

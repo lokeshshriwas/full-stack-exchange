@@ -55,7 +55,7 @@ export const Orders = ({ market }: OrdersProps) => {
       try {
         const openRes = await axios.get(
           `${env.apiV2}/order/open?market=${market}`,
-          { withCredentials: true }
+          { withCredentials: true },
         );
 
         if (mounted) {
@@ -68,7 +68,7 @@ export const Orders = ({ market }: OrdersProps) => {
               filled: o.executedQty,
               side: o.side,
               status: "open",
-            }))
+            })),
           );
         }
       } catch (err) {
@@ -101,26 +101,16 @@ export const Orders = ({ market }: OrdersProps) => {
         "ORDER_PLACED",
         (data: any) => {
           const payload = data.payload;
-          console.log("[Orders] ORDER_PLACED received:", payload);
-
           if (payload.market !== market) {
-            console.log("[Orders] Ignoring ORDER_PLACED - wrong market");
             return;
           }
 
           // If fully filled, don't add to open - just refetch history
           if (payload.status === "filled") {
-            console.log(
-              "[Orders] ORDER_PLACED status is filled, fetching history and NOT adding to open orders"
-            );
             debouncedFetchHistory();
             return;
           }
 
-          console.log(
-            "[Orders] Adding/updating order in open orders, status:",
-            payload.status
-          );
           setOpenOrders((prev) => {
             const updated: Order = {
               orderId: payload.orderId,
@@ -133,18 +123,12 @@ export const Orders = ({ market }: OrdersProps) => {
             };
 
             const exists = prev.find((o) => o.orderId === payload.orderId);
-            if (exists) {
-              console.log("[Orders] Updating existing order:", payload.orderId);
-            } else {
-              console.log("[Orders] Adding new order:", payload.orderId);
-            }
-
             return exists
               ? prev.map((o) => (o.orderId === payload.orderId ? updated : o))
               : [...prev, updated];
           });
         },
-        `orders-placed-${market}`
+        `orders-placed-${market}`,
       );
 
       // ORDER_FILL - maker's order was filled by another user
@@ -152,47 +136,34 @@ export const Orders = ({ market }: OrdersProps) => {
         "ORDER_FILL",
         (data: any) => {
           const payload = data.payload;
-          console.log("[Orders] ORDER_FILL received:", payload);
 
           if (payload.market !== market) {
-            console.log("[Orders] Ignoring ORDER_FILL - wrong market");
             return;
           }
 
           setOpenOrders((prev) => {
             const order = prev.find((o) => o.orderId === payload.orderId);
             if (!order) {
-              console.log(
-                "[Orders] ORDER_FILL: Order not found in open orders:",
-                payload.orderId
-              );
               return prev;
             }
 
             const newFilled = order.filled + payload.filledQty;
-            console.log(
-              `[Orders] ORDER_FILL: orderId=${payload.orderId}, oldFilled=${order.filled}, newFilled=${newFilled}, quantity=${order.quantity}`
-            );
 
             // Check if fully filled
             if (newFilled >= parseFloat(order.quantity)) {
-              console.log(
-                "[Orders] ORDER_FILL: Order fully filled, removing from open orders and fetching history"
-              );
               debouncedFetchHistory();
               return prev.filter((o) => o.orderId !== payload.orderId);
             }
 
             // Partial fill - update in place
-            console.log("[Orders] ORDER_FILL: Partial fill, updating order");
             return prev.map((o) =>
               o.orderId === payload.orderId
                 ? { ...o, filled: newFilled, status: "partial" }
-                : o
+                : o,
             );
           });
         },
-        `orders-fill-${market}`
+        `orders-fill-${market}`,
       );
 
       // ORDER_CANCELLED
@@ -203,11 +174,11 @@ export const Orders = ({ market }: OrdersProps) => {
           if (payload.market !== market) return;
 
           setOpenOrders((prev) =>
-            prev.filter((o) => o.orderId !== payload.orderId)
+            prev.filter((o) => o.orderId !== payload.orderId),
           );
           debouncedFetchHistory();
         },
-        `orders-cancelled-${market}`
+        `orders-cancelled-${market}`,
       );
 
       // Subscribe to user's order channel
@@ -222,7 +193,7 @@ export const Orders = ({ market }: OrdersProps) => {
       signalingManager.registerCallback(
         "auth_success",
         subscribeToOrders,
-        `orders-auth-${market}`
+        `orders-auth-${market}`,
       );
       signalingManager.authenticate();
     } else {
@@ -240,19 +211,19 @@ export const Orders = ({ market }: OrdersProps) => {
 
       signalingManager.deRegisterCallback(
         "ORDER_PLACED",
-        `orders-placed-${market}`
+        `orders-placed-${market}`,
       );
       signalingManager.deRegisterCallback(
         "ORDER_FILL",
-        `orders-fill-${market}`
+        `orders-fill-${market}`,
       );
       signalingManager.deRegisterCallback(
         "ORDER_CANCELLED",
-        `orders-cancelled-${market}`
+        `orders-cancelled-${market}`,
       );
       signalingManager.deRegisterCallback(
         "auth_success",
-        `orders-auth-${market}`
+        `orders-auth-${market}`,
       );
     };
   }, [market, debouncedFetchHistory]);

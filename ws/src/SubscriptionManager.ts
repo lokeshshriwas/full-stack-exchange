@@ -50,14 +50,17 @@ export class SubscriptionManager {
     if (subscription.startsWith("depth@")) {
       const market = subscription.split("@")[1];
       const snapshot = await this.redisClientKV.get(`depth_snapshot:${market}`);
+      console.log(`[WS] Depth snapshot for ${market}: ${snapshot ? 'FOUND' : 'NOT FOUND'}`);
       if (snapshot) {
         const parsedSnapshot = JSON.parse(snapshot);
+        console.log(`[WS] Sending depth snapshot to user ${userId}: ${parsedSnapshot.bids?.length || 0} bids, ${parsedSnapshot.asks?.length || 0} asks`);
         UserManager.getInstance().getUser(userId)?.emit({
           stream: subscription,
           data: {
             e: "depth",
             bids: parsedSnapshot.bids,
-            asks: parsedSnapshot.asks
+            asks: parsedSnapshot.asks,
+            isSnapshot: true  // Flag to help frontend distinguish initial load
           }
         } as any);
       }
@@ -66,9 +69,11 @@ export class SubscriptionManager {
     if (subscription.startsWith("trade@")) {
       const market = subscription.split("@")[1];
       const tradesStrings = await this.redisClientKV.lRange(`trades_snapshot:${market}`, 0, -1);
+      console.log(`[WS] Trades snapshot for ${market}: ${tradesStrings?.length || 0} trades found`);
 
       if (tradesStrings && tradesStrings.length > 0) {
         const trades = tradesStrings.map(t => JSON.parse(t));
+        console.log(`[WS] Sending ${trades.length} trades snapshot to user ${userId}`);
 
         UserManager.getInstance().getUser(userId)?.emit({
           stream: subscription,
@@ -82,7 +87,8 @@ export class SubscriptionManager {
               q: t.q,
               s: t.s, // market
               T: t.T
-            }))
+            })),
+            isSnapshot: true  // Flag to help frontend distinguish initial load
           }
         } as any);
       }

@@ -4,7 +4,6 @@ import React, { useState, Suspense } from "react";
 import { FiMail, FiLock } from "react-icons/fi";
 import Header from "../components/maincomps/Header";
 import Input from "../components/maincomps/Input";
-import Checkbox from "../components/maincomps/Checkbox";
 import Link from "next/link";
 import Button from "../components/maincomps/Button";
 import toast, { Toaster } from "react-hot-toast";
@@ -18,7 +17,7 @@ function LoginContent() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
-    {}
+    {},
   );
 
   const { login } = useAuth();
@@ -55,7 +54,11 @@ function LoginContent() {
     try {
       await login(email, password, rememberMe);
       toast.success("Login successful!");
-      router.push(redirectTo);
+
+      // Small delay to ensure toast displays before navigation (critical in production)
+      setTimeout(() => {
+        router.push(redirectTo);
+      }, 800);
     } catch (error) {
       if (error instanceof AxiosError) {
         const message = error.response?.data?.message || "Login failed";
@@ -100,20 +103,6 @@ function LoginContent() {
               disabled={isSubmitting}
             />
 
-            <div className="flex items-center justify-between">
-              <Checkbox
-                label="Remember me"
-                checked={rememberMe}
-                onChange={setRememberMe}
-              />
-              <Link
-                href="/forgot-password"
-                className="text-sm text-base-text-med-emphasis hover:text-base-text-high-emphasis"
-              >
-                Forgot password?
-              </Link>
-            </div>
-
             <Button
               type="submit"
               variant="primary"
@@ -135,7 +124,7 @@ function LoginContent() {
           </p>
         </div>
       </div>
-      <Toaster position="top-center" />
+      {/* <Toaster position="top-center" /> */}
     </div>
   );
 }

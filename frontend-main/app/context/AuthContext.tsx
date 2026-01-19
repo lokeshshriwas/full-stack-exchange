@@ -25,12 +25,12 @@ interface AuthContextType {
   login: (
     email: string,
     password: string,
-    rememberMe?: boolean
+    rememberMe?: boolean,
   ) => Promise<void>;
   register: (
     fullName: string,
     email: string,
-    password: string
+    password: string,
   ) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -94,7 +94,7 @@ function attachAuthInterceptor() {
       }
 
       return Promise.reject(error);
-    }
+    },
   );
 }
 
@@ -158,13 +158,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const userData = response.data.data.user;
         const accessToken = response.data.data.accessToken;
         const refreshToken = response.data.data.refreshToken;
-        console.log(
-          "access token:",
-          accessToken,
-          "refresh token:",
-          refreshToken
-        );
-
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
 
@@ -187,7 +180,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const register = async (
     fullName: string,
     email: string,
-    password: string
+    password: string,
   ) => {
     setIsLoading(true);
     try {
@@ -199,10 +192,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (response.data.success) {
         const userData = response.data.data.user;
+        const accessToken = response.data.data.accessToken;
+        const refreshToken = response.data.data.refreshToken;
         setUser(userData);
         localStorage.setItem("user", JSON.stringify(userData));
-        localStorage.setItem("accessToken", response.data.data.accessToken);
-        localStorage.setItem("refreshToken", response.data.data.refreshToken);
+
+        // Store accessToken for WebSocket authentication (cross-domain issue workaround)
+
+        if (accessToken && refreshToken) {
+          localStorage.setItem("accessToken", accessToken);
+          localStorage.setItem("refreshToken", refreshToken);
+        }
+        // Cookies are set automatically by the browser due to defaults.withCredentials
       }
     } catch (error) {
       console.error("Register failed", error);
@@ -244,7 +245,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  console.log("AuthContext", context);
   if (!context) {
     throw new Error("useAuth must be used within AuthProvider");
   }

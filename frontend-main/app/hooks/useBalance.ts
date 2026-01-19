@@ -42,146 +42,62 @@ export function useBalance(user: User | null, market: string) {
     };
 
     useEffect(() => {
-        // Initial fetch
+        // Initial fetch from DB on mount
         fetchBalances();
 
-        // Event-driven balance updates instead of polling
-        // Balance changes when: ORDER_PLACED, ORDER_FILL, ORDER_CANCELLED
         if (!user) return;
 
         const { SignalingManager } = require('../utils/SignalingManager');
         const signalingManager = SignalingManager.getInstance();
 
-        // Wait for authentication before setting up listeners
+        // Setup balance listener - ONLY BALANCE_UPDATE from Redis
         const setupBalanceListeners = () => {
             const userId = signalingManager.getAuthenticatedUserId();
             if (!userId) return;
 
-            let reconcileTimeout: NodeJS.Timeout | null = null;
-
-            // Debounced reconciliation with server to account for DB write delay
-            const debouncedReconcile = () => {
-                if (reconcileTimeout) clearTimeout(reconcileTimeout);
-                reconcileTimeout = setTimeout(() => {
-                    console.log('[useBalance] Reconciling with server after DB write delay');
-                    fetchBalances();
-                }, 300); // Wait 300ms for DB writes to complete
-            };
-
-            // Optimistically update balance on ORDER_PLACED (funds locked)
+            // ✅ BALANCE_UPDATE: Real-time updates from Engine (Redis)
+            // Published after every balance change: order placement, fills, cancellations
             signalingManager.registerCallback(
-                'ORDER_PLACED',
+                'BALANCE_UPDATE',
                 (data: any) => {
-                    console.log('[useBalance] ORDER_PLACED - optimistic update', data);
                     const payload = data.payload;
 
-                    // Optimistically update local balance before DB write completes
                     setBalances((prev) => {
                         const updated = [...prev];
-                        const side = payload.side;
-                        const price = parseFloat(payload.price);
-                        const qty = parseFloat(payload.quantity);
-                        const executedQty = payload.executedQty || 0;
+                        const index = updated.findIndex(b => b.symbol === payload.asset);
 
-                        if (side === 'buy') {
-                            // Buy order: lock USDC (quote asset)
-                            const requiredUsdc = qty * price;
-                            const usdcIndex = updated.findIndex(b => b.symbol === quoteAsset);
-                            if (usdcIndex !== -1) {
-                                const current = updated[usdcIndex];
-                                updated[usdcIndex] = {
-                                    ...current,
-                                    available: (parseFloat(current.available) - requiredUsdc).toFixed(8),
-                                    locked: (parseFloat(current.locked) + requiredUsdc).toFixed(8)
-                                };
-                                console.log(`[useBalance] Optimistic: Locked ${requiredUsdc} ${quoteAsset}`);
-                            }
+                        if (index !== -1) {
+                            // Update existing asset balance
+                            updated[index] = {
+                                ...updated[index],
+                                available: payload.available,
+                                locked: payload.locked
+                            };
                         } else {
-                            // Sell order: lock base asset
-                            const baseIndex = updated.findIndex(b => b.symbol === baseAsset);
-                            if (baseIndex !== -1) {
-                                const current = updated[baseIndex];
-                                updated[baseIndex] = {
-                                    ...current,
-                                    available: (parseFloat(current.available) - qty).toFixed(8),
-                                    locked: (parseFloat(current.locked) + qty).toFixed(8)
-                                };
-                                console.log(`[useBalance] Optimistic: Locked ${qty} ${baseAsset}`);
-                            }
+                            // Add new asset (rare, but handle it)
+                            updated.push({
+                                user_id: user.id || "",
+                                asset_id: 0,
+                                symbol: payload.asset,
+                                available: payload.available,
+                                locked: payload.locked,
+                                decimals: 8
+                            });
                         }
 
                         return updated;
                     });
-
-                    // Reconcile with server after DB write delay
-                    debouncedReconcile();
                 },
-                `balance-order-placed-${user.id}`
+                `balance-update-${user.id}`
             );
 
-            // Refresh balance on ORDER_FILL (funds transferred)
-            signalingManager.registerCallback(
-                'ORDER_FILL',
-                () => {
-                    console.log('[useBalance] ORDER_FILL - refreshing balance');
-                    debouncedReconcile();
-                },
-                `balance-order-fill-${user.id}`
-            );
-
-            // Optimistically update balance on ORDER_CANCELLED (funds unlocked)
-            signalingManager.registerCallback(
-                'ORDER_CANCELLED',
-                (data: any) => {
-                    console.log('[useBalance] ORDER_CANCELLED - optimistic update', data);
-                    const payload = data.payload;
-
-                    // Optimistically unlock funds immediately
-                    setBalances((prev) => {
-                        const updated = [...prev];
-                        const side = payload.side;
-                        const price = parseFloat(payload.price);
-                        const qty = parseFloat(payload.quantity);
-                        const filled = payload.filled || 0;
-                        const remainingQty = qty - filled; // Only unlock unfilled portion
-
-                        if (side === 'buy') {
-                            // Buy order cancelled: unlock USDC
-                            const lockedUsdc = remainingQty * price;
-                            const usdcIndex = updated.findIndex(b => b.symbol === quoteAsset);
-                            if (usdcIndex !== -1) {
-                                const current = updated[usdcIndex];
-                                updated[usdcIndex] = {
-                                    ...current,
-                                    available: (parseFloat(current.available) + lockedUsdc).toFixed(8),
-                                    locked: (parseFloat(current.locked) - lockedUsdc).toFixed(8)
-                                };
-                                console.log(`[useBalance] Optimistic: Unlocked ${lockedUsdc} ${quoteAsset}`);
-                            }
-                        } else {
-                            // Sell order cancelled: unlock base asset
-                            const baseIndex = updated.findIndex(b => b.symbol === baseAsset);
-                            if (baseIndex !== -1) {
-                                const current = updated[baseIndex];
-                                updated[baseIndex] = {
-                                    ...current,
-                                    available: (parseFloat(current.available) + remainingQty).toFixed(8),
-                                    locked: (parseFloat(current.locked) - remainingQty).toFixed(8)
-                                };
-                                console.log(`[useBalance] Optimistic: Unlocked ${remainingQty} ${baseAsset}`);
-                            }
-                        }
-
-                        return updated;
-                    });
-
-                    // Reconcile with server after DB write delay
-                    debouncedReconcile();
-                },
-                `balance-order-cancelled-${user.id}`
-            );
-
-            console.log('[useBalance] Event-driven balance listeners set up for user:', userId);
+            // Subscribe to balance WebSocket channel
+            if (signalingManager.isAuthenticated()) {
+                signalingManager.sendMessage({
+                    method: 'SUBSCRIBE',
+                    params: [`balances:user:${userId}`]
+                });
+            }
         };
 
         // Set up listeners if already authenticated, or wait for auth
@@ -197,11 +113,15 @@ export function useBalance(user: User | null, market: string) {
 
         // Cleanup on unmount
         return () => {
-            signalingManager.deRegisterCallback('ORDER_PLACED', `balance-order-placed-${user.id}`);
-            signalingManager.deRegisterCallback('ORDER_FILL', `balance-order-fill-${user.id}`);
-            signalingManager.deRegisterCallback('ORDER_CANCELLED', `balance-order-cancelled-${user.id}`);
+            const userId = signalingManager.getAuthenticatedUserId();
+            if (userId) {
+                signalingManager.sendMessage({
+                    method: 'UNSUBSCRIBE',
+                    params: [`balances:user:${userId}`]
+                });
+            }
+            signalingManager.deRegisterCallback('BALANCE_UPDATE', `balance-update-${user.id}`);
             signalingManager.deRegisterCallback('auth_success', `balance-auth-${user.id}`);
-            console.log('[useBalance] Cleaned up balance listeners');
         };
     }, [user?.id, market]);
 

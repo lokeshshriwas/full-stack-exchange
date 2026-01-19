@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Appbar } from "./components/Appbar";
 import { Providers } from "./Provider";
+import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -74,7 +75,10 @@ export default function RootLayout({
           <div className="pb-2">
             <Appbar />
           </div>
-          <div className="mt-2">{children}</div>
+          <div className="mt-2">
+            {children}
+            <Toaster position="top-center" />
+          </div>
         </Providers>
       </body>
     </html>

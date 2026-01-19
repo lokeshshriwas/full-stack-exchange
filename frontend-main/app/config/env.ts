@@ -23,8 +23,8 @@ const getBaseUrl = () => {
 };
 
 const getWsUrl = () => {
-    // If env var is explicitly set, use it
-    if (process.env.NEXT_PUBLIC_WS_URL !== undefined) {
+    // If env var is explicitly set AND not empty, use it
+    if (process.env.NEXT_PUBLIC_WS_URL) {
         return process.env.NEXT_PUBLIC_WS_URL;
     }
     // In browser, construct WebSocket URL from current origin with /ws path
@@ -39,7 +39,11 @@ const getWsUrl = () => {
 export const env = {
     // API URLs - empty string means same origin
     apiUrl: getBaseUrl(),
-    wsUrl: getWsUrl(),
+
+    // wsUrl must be a getter to evaluate at runtime, not build time
+    get wsUrl() {
+        return getWsUrl();
+    },
 
     // Derived URLs for convenience
     get apiV1() {

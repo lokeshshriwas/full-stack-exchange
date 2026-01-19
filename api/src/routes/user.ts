@@ -127,6 +127,8 @@ userRouter.post("/register", async (req: Request, res: Response) => {
           email: newUser.email,
           createdAt: newUser.created_at,
         },
+        accessToken,
+        refreshToken,
       },
     });
   } catch (error) {
