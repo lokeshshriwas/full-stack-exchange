@@ -72,7 +72,7 @@ export const MarketBar = ({
                 24H Change
               </p>
               <p
-                className={` font-medium tabular-nums leading-5 text-xs sm:text-sm text-green-text ${
+                className={` font-medium tabular-nums leading-5 text-xs sm:text-sm ${
                   Number(ticker?.priceChange) > 0
                     ? "text-green-500"
                     : "text-red-500"

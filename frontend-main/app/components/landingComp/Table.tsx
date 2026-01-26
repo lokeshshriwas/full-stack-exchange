@@ -90,14 +90,22 @@ const Table = ({ tableData }: { tableData: any }) => {
                 </td>
                 <td className="text-sm tabular-nums px-2 py-3 last:pr-7 text-right">
                   <p
-                    className={`text-sm font-medium tabular-nums text-red-text ${item?.priceChangePercent * 100 < 0 ? "text-red-500" : "text-green-500"}`}
+                    className={`text-sm font-medium tabular-nums ${Number(item?.priceChangePercent) * 100 > 0 ? "text-green-500" : "text-red-500"}`}
                   >
-                    {(item?.priceChangePercent * 100).toFixed(2)}%
+                    {Number(item?.priceChangePercent * 100).toFixed(2)}%
                   </p>
                 </td>
                 <td className="text-sm tabular-nums px-2 py-3 last:pr-7 text-right hidden md:table-cell">
                   <div className="flex justify-end">
-                    <LineChart data={item?.klines[0].data} />
+                    {item?.klines?.[0]?.data &&
+                    Array.isArray(item.klines[0].data) &&
+                    item.klines[0].data.length > 0 ? (
+                      <LineChart data={item.klines[0].data} />
+                    ) : (
+                      <div className="h-[50px] w-[80px] flex items-center justify-center text-xs text-gray-400">
+                        -
+                      </div>
+                    )}
                   </div>
                 </td>
               </tr>
