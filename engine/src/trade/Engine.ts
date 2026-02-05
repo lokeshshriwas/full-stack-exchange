@@ -449,7 +449,12 @@ export class Engine {
 
         // Get current Redis balance and add the deposit amount
         const currentBalance = await RedisManager.getInstance().getBalance(onRampUserId, onRampAsset);
-        const newTotal = currentBalance.available + currentBalance.locked + onRampAmount;
+        let newTotal;
+        if (message.data.addCrypto) {
+          newTotal = currentBalance.available + currentBalance.locked;
+        } else {
+          newTotal = currentBalance.available + currentBalance.locked + onRampAmount;
+        }
 
         // Sync Redis to have the new total (DB already has it)
         // Pass newTotal as available + existing locked to preserve locked funds

@@ -130,13 +130,15 @@ balanceRouter.post("/add-usdc", async (req: Request, res: Response) => {
       [userId]
     );
 
-    RedisManager.getInstance().pushMessage({
+    // MOVED: Push to Redis AFTER all DB operations complete
+    await RedisManager.getInstance().pushMessage({
       type: ON_RAMP,
       data: {
         amount,
         userId: userId.toString(),
         txnId: (Math.random() * 1000000).toString(),
-        asset: "USDC"
+        asset: "USDC",
+        addCrypto: true
       }
     });
 
@@ -154,21 +156,18 @@ balanceRouter.post("/add-crypto", async (req: Request, res: Response) => {
   try {
     const { userId, symbol, amount }: { userId: number; symbol: string; amount: string } = req.body;
 
-    // Validate required fields
     if (!userId || !symbol || !amount) {
       return res.status(400).json({
         error: "userId, symbol, and amount are required",
       });
     }
 
-    // Validate amount
     if (parseFloat(amount) <= 0) {
       return res.status(400).json({
         error: "Amount must be greater than 0",
       });
     }
 
-    // Validate symbol format (uppercase, alphanumeric)
     const sanitizedSymbol = symbol.toUpperCase().trim();
     if (!/^[A-Z0-9]{2,10}$/.test(sanitizedSymbol)) {
       return res.status(400).json({
@@ -176,7 +175,6 @@ balanceRouter.post("/add-crypto", async (req: Request, res: Response) => {
       });
     }
 
-    // Get asset id by symbol
     const assetResult = await pool.query(
       `SELECT id, symbol, decimals FROM assets WHERE symbol = $1`,
       [sanitizedSymbol]
@@ -191,7 +189,6 @@ balanceRouter.post("/add-crypto", async (req: Request, res: Response) => {
     const asset = assetResult.rows[0];
     const assetId: number = asset.id;
 
-    // Upsert balance for the asset
     await pool.query(
       `INSERT INTO balances (user_id, asset_id, available, locked)
        VALUES ($1, $2, $3, 0)
@@ -200,7 +197,6 @@ balanceRouter.post("/add-crypto", async (req: Request, res: Response) => {
       [userId, assetId, amount]
     );
 
-    // Get updated balance
     const updatedBalance = await pool.query(
       `SELECT 
         b.user_id,
@@ -215,14 +211,15 @@ balanceRouter.post("/add-crypto", async (req: Request, res: Response) => {
       [userId, sanitizedSymbol]
     );
 
-    // Push to Redis
-    RedisManager.getInstance().pushMessage({
+    // MOVED: Push to Redis AFTER all DB operations complete
+    await RedisManager.getInstance().pushMessage({
       type: ON_RAMP,
       data: {
         amount,
         userId: userId.toString(),
         txnId: (Math.random() * 1000000).toString(),
-        asset: sanitizedSymbol
+        asset: sanitizedSymbol,
+        addCrypto: true
       }
     });
 
@@ -235,4 +232,3 @@ balanceRouter.post("/add-crypto", async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to add cryptocurrency" });
   }
 });
-

@@ -21,7 +21,8 @@ export type MessageToEngine = {
         amount: string,
         userId: string,
         txnId: string,
-        asset: string
+        asset: string,
+        addCrypto: boolean
     }
 } | {
     type: typeof GET_DEPTH,

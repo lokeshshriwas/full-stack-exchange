@@ -31,6 +31,7 @@ export type MessageFromApi = {
         userId: string,
         txnId: string,
         asset: string
+        addCrypto: boolean
     }
 } | {
     type: typeof GET_DEPTH,
