@@ -1,0 +1,160 @@
+# =============================================================================
+# Oracle VM.Standard.E2.1.Micro — Optimized for 1 GB RAM
+# =============================================================================
+# Shape:   1 OCPU | 1 GB RAM | x86_64 (amd64) | Ubuntu 22.04
+# Usage:
+#   1. Copy this file + .env to your Oracle VM
+#   2. docker compose -f docker-compose.oracle.yml pull
+#   3. docker compose -f docker-compose.oracle.yml up -d
+#
+# IMPORTANT: Set up 1 GB swap BEFORE starting (see oracle_migration_guide.md)
+# =============================================================================
+
+version: "3.8"
+
+services:
+  # ============================================
+  # Infrastructure Services
+  # ============================================
+
+  redis:
+    image: redis:7-alpine
+    container_name: exchange-redis
+    # Hard memory cap: 96 MB. maxmemory 64mb = Redis evicts old keys before hitting the limit.
+    command: redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    mem_limit: 96m
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    container_name: exchange-timescaledb
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-exchange-platform}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    # Tuned for 1 GB RAM: shared_buffers=64MB (default is 128MB+), max 20 connections only.
+    command: >
+      postgres
+      -c shared_buffers=64MB
+      -c effective_cache_size=128MB
+      -c work_mem=4MB
+      -c maintenance_work_mem=32MB
+      -c max_connections=20
+      -c wal_buffers=4MB
+      -c checkpoint_completion_target=0.9
+      -c synchronous_commit=off
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-exchange-platform}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - timescale-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    mem_limit: 320m
+
+  # ============================================
+  # Application Services (from Docker Hub)
+  # ============================================
+
+  api:
+    image: ${DOCKER_USER}/exchange-api:${IMAGE_TAG:-latest}
+    container_name: exchange-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    environment:
+      # Cap Node.js V8 heap to 128 MB — prevents OOM kills under low traffic
+      - NODE_OPTIONS=--max-old-space-size=128
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_HOST=timescaledb
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-exchange-platform}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - API_PORT=8080
+      - TARGET_URL=${TARGET_URL:-https://api.backpack.exchange}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
+      - REFRESH_SECRET=${REFRESH_SECRET:?REFRESH_SECRET is required}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - NODE_ENV=production
+    restart: unless-stopped
+    mem_limit: 150m
+
+  engine:
+    image: ${DOCKER_USER}/exchange-engine:${IMAGE_TAG:-latest}
+    container_name: exchange-engine
+    depends_on:
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+      api:
+        condition: service_started
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=96
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_HOST=timescaledb
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-exchange-platform}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - ENGINE_API_URL=http://api:8080
+      - WITH_SNAPSHOT=${WITH_SNAPSHOT:-false}
+    restart: unless-stopped
+    mem_limit: 120m
+
+  ws:
+    image: ${DOCKER_USER}/exchange-ws:${IMAGE_TAG:-latest}
+    container_name: exchange-ws
+    ports:
+      - "3001:3001"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=64
+      - REDIS_URL=redis://redis:6379
+      - WS_PORT=3001
+      - JWT_SECRET=${JWT_SECRET}
+      - REFRESH_SECRET=${REFRESH_SECRET}
+    restart: unless-stopped
+    mem_limit: 90m
+
+  db-worker:
+    image: ${DOCKER_USER}/exchange-db-worker:${IMAGE_TAG:-latest}
+    container_name: exchange-db-worker
+    depends_on:
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=64
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_HOST=timescaledb
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-exchange-platform}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    restart: unless-stopped
+    mem_limit: 90m
+
+volumes:
+  redis-data:
+  timescale-data:
