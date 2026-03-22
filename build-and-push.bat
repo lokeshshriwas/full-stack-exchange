@@ -41,7 +41,7 @@ if %ERRORLEVEL% NEQ 0 (
     echo Failed to build API
     exit /b 1
 )
-docker build -t %DOCKER_USER%/exchange-api:%TAG% .
+docker build --platform linux/amd64 -t %DOCKER_USER%/exchange-api:%TAG% .
 docker push %DOCKER_USER%/exchange-api:%TAG%
 cd ..
 
@@ -54,7 +54,7 @@ if %ERRORLEVEL% NEQ 0 (
     echo Failed to build Engine
     exit /b 1
 )
-docker build -t %DOCKER_USER%/exchange-engine:%TAG% .
+docker build --platform linux/amd64 -t %DOCKER_USER%/exchange-engine:%TAG% .
 docker push %DOCKER_USER%/exchange-engine:%TAG%
 cd ..
 
@@ -67,7 +67,7 @@ if %ERRORLEVEL% NEQ 0 (
     echo Failed to build WS
     exit /b 1
 )
-docker build -t %DOCKER_USER%/exchange-ws:%TAG% .
+docker build --platform linux/amd64 -t %DOCKER_USER%/exchange-ws:%TAG% .
 docker push %DOCKER_USER%/exchange-ws:%TAG%
 cd ..
 
@@ -80,7 +80,7 @@ if %ERRORLEVEL% NEQ 0 (
     echo Failed to build DB Worker
     exit /b 1
 )
-docker build -t %DOCKER_USER%/exchange-db-worker:%TAG% .
+docker build --platform linux/amd64 -t %DOCKER_USER%/exchange-db-worker:%TAG% .
 docker push %DOCKER_USER%/exchange-db-worker:%TAG%
 cd ..
 
@@ -95,9 +95,9 @@ echo   - %DOCKER_USER%/exchange-engine:%TAG%
 echo   - %DOCKER_USER%/exchange-ws:%TAG%
 echo   - %DOCKER_USER%/exchange-db-worker:%TAG%
 echo.
-echo Next steps on EC2:
-echo   1. Copy docker-compose.prod.yml and .env to EC2
+echo Next steps on Oracle VM (or EC2):
+echo   1. Copy docker-compose.oracle.yml (or docker-compose.prod.yml) and .env to server
 echo   2. Update .env with DOCKER_USER=%DOCKER_USER%
-echo   3. docker compose -f docker-compose.prod.yml pull
-echo   4. docker compose -f docker-compose.prod.yml up -d
+echo   3. docker compose -f docker-compose.oracle.yml pull
+echo   4. docker compose -f docker-compose.oracle.yml up -d
 echo.

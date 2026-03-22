@@ -55,14 +55,22 @@ app.use(
   createProxyMiddleware({
     target: targetUrl,
     changeOrigin: true,
-    onProxyRes: (proxyRes: any, req: any, _res: any) => {
-      // Add CORS headers to proxied responses
-      const origin = req.headers.origin;
-      if (origin && (corsOrigins.includes(origin) || corsOrigins.includes("*"))) {
-        proxyRes.headers["Access-Control-Allow-Origin"] = origin;
-        proxyRes.headers["Access-Control-Allow-Credentials"] = "true";
-        proxyRes.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-        proxyRes.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
+    on: {
+      proxyReq: (proxyReq: any) => {
+        // Strip browser headers that cause Backpack to return 403.
+        // Without Origin/Referer, the request looks like a server-to-server call.
+        proxyReq.removeHeader("origin");
+        proxyReq.removeHeader("referer");
+      },
+      proxyRes: (proxyRes: any, req: any, _res: any) => {
+        // Add CORS headers so the browser accepts the proxied response
+        const origin = req.headers.origin;
+        if (origin && (corsOrigins.includes(origin) || corsOrigins.includes("*"))) {
+          proxyRes.headers["Access-Control-Allow-Origin"] = origin;
+          proxyRes.headers["Access-Control-Allow-Credentials"] = "true";
+          proxyRes.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+          proxyRes.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
+        }
       }
     }
   } as any)
